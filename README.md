@@ -1,4 +1,4 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png](https://decentralchain.io/wp-content/uploads/2023/02/dcc-n8n-node-1.webp](https://decentralchain.io/wp-content/uploads/2023/02/dcc-n8n-node.webp)
+![Banner image](https://decentralchain.io/wp-content/uploads/2023/02/dcc-n8n-node-1.webp](https://decentralchain.io/wp-content/uploads/2023/02/dcc-n8n-node.webp)
 
 # DCC Node Api Connector for N8N
 
