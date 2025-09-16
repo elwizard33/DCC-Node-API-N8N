@@ -1,0 +1,23 @@
+{
+  "node": "dcc-nodes.dcc",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": ["Blockchain", "Finance"],
+  "resources": {
+    "credentialDocumentation": [
+      {
+        "url": "https://docs.decentralchain.io/"
+      }
+    ],
+    "primaryDocumentation": [
+      {
+        "url": "https://docs.decentralchain.io/"
+      }
+    ],
+    "otherDocumentation": [
+      {
+        "url": "https://explorer.decentralchain.io/"
+      }
+    ]
+  }
+}
