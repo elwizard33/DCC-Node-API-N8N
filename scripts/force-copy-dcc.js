@@ -26,7 +26,7 @@ const dccSvg = 'dist/nodes/Dcc/dcc.svg';
 
 if (!fs.existsSync(dccCredJs) || !fs.existsSync(dccNodeJs) || !fs.existsSync(dccSvg)) {
   console.log('[force-copy] Missing DCC artifacts, attempting manual copy...');
-  
+
   // Try to copy from any existing similar structure or build again
   try {
     if (fs.existsSync('credentials/DccApi.credentials.js')) {
@@ -36,7 +36,7 @@ if (!fs.existsSync(dccCredJs) || !fs.existsSync(dccNodeJs) || !fs.existsSync(dcc
       forceCopy('nodes/Dcc/Dcc.node.js', dccNodeJs);
     }
     forceCopy('nodes/Dcc/dcc.svg', dccSvg);
-    
+
     // Attempt re-compile of specific files
     const { execSync } = require('child_process');
     try {
