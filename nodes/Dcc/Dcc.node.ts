@@ -7,15 +7,20 @@ import {
 	NodeApiError,
 } from 'n8n-workflow';
 
+// Import waves-transactions library
+const {
+	alias, burn, cancelLease, issue, lease, transfer,
+	broadcast
+} = require('@decentralchain/waves-transactions');
+
 export class Dcc implements INodeType {
-	// Using routing for most operations; broadcast will rely on routing POST body mapping
 	description: INodeTypeDescription = {
 		displayName: 'DecentralChain (DCC)',
 		name: 'dcc',
 		icon: 'file:dcc.svg',
 		group: ['transform'],
 		version: 1,
-		description: 'Interact with DecentralChain (DCC) node REST API',
+		description: 'Create, sign and broadcast DecentralChain transactions, plus query blockchain data',
 		defaults: { name: 'DCC' },
 		inputs: ['main'],
 		outputs: ['main'],
@@ -43,13 +48,13 @@ export class Dcc implements INodeType {
 				noDataExpression: true,
 				options: [
 					{ name: 'Account', value: 'account' },
-					{ name: 'Token', value: 'token' },
+					{ name: 'Token/Asset', value: 'token' },
 					{ name: 'Transaction', value: 'transaction' },
 					{ name: 'Utility', value: 'utility' },
 				],
-				default: 'account',
+				default: 'transaction',
 			},
-			// Operations
+			// Account Operations
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -57,10 +62,13 @@ export class Dcc implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['account'] } },
 				options: [
-					{ name: 'Get Account', value: 'getAccount', action: 'Get account balance & info' },
+					{ name: 'Get Account Balance', value: 'getAccount', action: 'Get account balance & info' },
+					{ name: 'Get All Asset Balances', value: 'getAllAssetBalances', action: 'Get all token balances for address' },
+					{ name: 'Get Asset Balance', value: 'getAssetBalance', action: 'Get specific asset balance' },
 				],
 				default: 'getAccount',
 			},
+			// Token Operations
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -68,10 +76,13 @@ export class Dcc implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['token'] } },
 				options: [
-					{ name: 'Get Token', value: 'getToken', action: 'Get token / asset information' },
+					{ name: 'Get Token Details', value: 'getToken', action: 'Get token / asset information' },
+					{ name: 'Get Multiple Tokens', value: 'getMultipleTokens', action: 'Get details for multiple tokens' },
+					{ name: 'Get NFTs', value: 'getNFTs', action: 'Get nf ts owned by address' },
 				],
 				default: 'getToken',
 			},
+			// Transaction Operations - Most comprehensive section
 			{
 				displayName: 'Operation',
 				name: 'operation',
@@ -79,10 +90,285 @@ export class Dcc implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['transaction'] } },
 				options: [
-					{ name: 'List Transactions', value: 'listTransactions', action: 'List account transactions' },
-					{ name: 'Broadcast Transaction', value: 'broadcastTransaction', action: 'Broadcast signed transaction JSON' },
+					{ name: 'Burn Tokens', value: 'burn', action: 'Destroy tokens permanently' },
+					{ name: 'Cancel Lease', value: 'cancelLease', action: 'Cancel active lease' },
+					{ name: 'Create Alias', value: 'alias', action: 'Create address alias' },
+					{ name: 'Get Transaction', value: 'getTransaction', action: 'Get transaction by ID' },
+					{ name: 'Invoke Smart Contract', value: 'invokeScript', action: 'Call smart contract function' },
+					{ name: 'Issue New Token', value: 'issue', action: 'Create a new token asset' },
+					{ name: 'Lease DCC', value: 'lease', action: 'Lease DCC for network rewards' },
+					{ name: 'List Transactions', value: 'listTransactions', action: 'Query account transactions' },
+					{ name: 'Mass Transfer', value: 'massTransfer', action: 'Send tokens to multiple recipients' },
+					{ name: 'Reissue Tokens', value: 'reissue', action: 'Mint more of existing token' },
+					{ name: 'Set Account Script', value: 'setScript', action: 'Set account script' },
+					{ name: 'Set Asset Script', value: 'setAssetScript', action: 'Set asset script' },
+					{ name: 'Store Data', value: 'data', action: 'Store key value data on blockchain' },
+					{ name: 'Token Sponsorship', value: 'sponsorship', action: 'Enable disable fee sponsorship' },
+					{ name: 'Transfer DCC/tokens', value: 'transfer', action: 'Send DCC or tokens to an address' },
+					{ name: 'Update Asset Info', value: 'updateAssetInfo', action: 'Update asset name description' },
 				],
-				default: 'listTransactions',
+				default: 'transfer',
+			},
+			// Utility Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: { show: { resource: ['utility'] } },
+				options: [
+					{ name: 'Generate Address', value: 'generateAddress', action: 'Generate address from public key' },
+					{ name: 'Get Aliases', value: 'getAliases', action: 'Get aliases for address' },
+					{ name: 'Validate Address', value: 'validateAddress', action: 'Validate address format' },
+				],
+				default: 'generateAddress',
+			},
+
+			// Common fields - Seed/Private Key for transaction signing
+			{
+				displayName: 'Authentication Method',
+				name: 'authMethod',
+				type: 'options',
+				displayOptions: {
+					show: {
+						resource: ['transaction'],
+						operation: ['transfer', 'issue', 'burn', 'reissue', 'massTransfer', 'lease', 'cancelLease', 'alias', 'data', 'invokeScript', 'setScript', 'setAssetScript', 'sponsorship', 'updateAssetInfo'],
+					},
+				},
+				options: [
+					{ name: 'Seed Phrase', value: 'seed' },
+					{ name: 'Private Key', value: 'privateKey' },
+					{ name: 'Create Unsigned Transaction', value: 'unsigned' },
+				],
+				default: 'seed',
+				description: 'How to sign the transaction',
+			},
+			{
+				displayName: 'Seed Phrase',
+				name: 'seedPhrase',
+				type: 'string',
+				typeOptions: { password: true },
+				displayOptions: {
+					show: {
+						resource: ['transaction'],
+						operation: ['transfer', 'issue', 'burn', 'reissue', 'massTransfer', 'lease', 'cancelLease', 'alias', 'data', 'invokeScript', 'setScript', 'setAssetScript', 'sponsorship', 'updateAssetInfo'],
+						authMethod: ['seed'],
+					},
+				},
+				default: '',
+				required: true,
+				description: 'Secret seed phrase for signing transactions',
+			},
+			{
+				displayName: 'Private Key',
+				name: 'privateKey',
+				type: 'string',
+				typeOptions: { password: true },
+				displayOptions: {
+					show: {
+						resource: ['transaction'],
+						operation: ['transfer', 'issue', 'burn', 'reissue', 'massTransfer', 'lease', 'cancelLease', 'alias', 'data', 'invokeScript', 'setScript', 'setAssetScript', 'sponsorship', 'updateAssetInfo'],
+						authMethod: ['privateKey'],
+					},
+				},
+				default: '',
+				required: true,
+				description: 'Private key for signing transactions',
+			},
+			{
+				displayName: 'Sender Public Key',
+				name: 'senderPublicKey',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['transaction'],
+						operation: ['transfer', 'issue', 'burn', 'reissue', 'massTransfer', 'lease', 'cancelLease', 'alias', 'data', 'invokeScript', 'setScript', 'setAssetScript', 'sponsorship', 'updateAssetInfo'],
+						authMethod: ['unsigned'],
+					},
+				},
+				default: '',
+				required: true,
+				description: 'Public key of the sender (required for unsigned transactions)',
+			},
+
+			// Network settings
+			{
+				displayName: 'Chain ID',
+				name: 'chainId',
+				type: 'options',
+				displayOptions: {
+					show: {
+						resource: ['transaction'],
+						operation: ['transfer', 'issue', 'burn', 'reissue', 'massTransfer', 'lease', 'cancelLease', 'alias', 'data', 'invokeScript', 'setScript', 'setAssetScript', 'sponsorship', 'updateAssetInfo'],
+					},
+				},
+				options: [
+					{ name: 'Mainnet (L)', value: 'L' },
+					{ name: 'Testnet (T)', value: 'T' },
+				],
+				default: 'L',
+				description: 'Network to create transaction for',
+			},
+			{
+				displayName: 'Auto Broadcast',
+				name: 'autoBroadcast',
+				type: 'boolean',
+				displayOptions: {
+					show: {
+						resource: ['transaction'],
+						operation: ['transfer', 'issue', 'burn', 'reissue', 'massTransfer', 'lease', 'cancelLease', 'alias', 'data', 'invokeScript', 'setScript', 'setAssetScript', 'sponsorship', 'updateAssetInfo'],
+						authMethod: ['seed', 'privateKey'],
+					},
+				},
+				default: false,
+				description: 'Whether to automatically broadcast transaction after signing',
+			},
+
+			// === TRANSFER TRANSACTION FIELDS ===
+			{
+				displayName: 'Recipient Address',
+				name: 'recipient',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['transfer'] } },
+				default: '',
+				required: true,
+				description: 'DCC address or alias (format: alias:L:myalias for mainnet)',
+			},
+			{
+				displayName: 'Amount',
+				name: 'amount',
+				type: 'string',
+				typeOptions: { password: true },
+				displayOptions: { show: { resource: ['transaction'], operation: ['transfer'] } },
+				default: '',
+				required: true,
+				description: 'Amount to transfer (in smallest units, e.g., 100000000 = 1 DCC)',
+			},
+			{
+				displayName: 'Asset ID',
+				name: 'assetId',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['transfer'] } },
+				default: '',
+				description: 'Asset to transfer (leave empty for DCC)',
+			},
+			{
+				displayName: 'Attachment',
+				name: 'attachment',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['transfer'] } },
+				default: '',
+				description: 'Optional message attachment (base58 encoded)',
+			},
+
+			// === ISSUE TOKEN FIELDS ===
+			{
+				displayName: 'Token Name',
+				name: 'tokenName',
+				type: 'string',
+				typeOptions: { password: true },
+				displayOptions: { show: { resource: ['transaction'], operation: ['issue'] } },
+				default: '',
+				required: true,
+				description: 'Name of the new token',
+			},
+			{
+				displayName: 'Token Description',
+				name: 'tokenDescription',
+				type: 'string',
+				typeOptions: { password: true },
+				displayOptions: { show: { resource: ['transaction'], operation: ['issue'] } },
+				default: '',
+				required: true,
+				description: 'Description of the new token',
+			},
+			{
+				displayName: 'Total Supply',
+				name: 'quantity',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['issue'] } },
+				default: '',
+				required: true,
+				description: 'Total token supply in smallest units',
+			},
+			{
+				displayName: 'Decimal Places',
+				name: 'decimals',
+				type: 'number',
+				displayOptions: { show: { resource: ['transaction'], operation: ['issue'] } },
+				default: 8,
+				description: 'Number of decimal places (0-8)',
+				typeOptions: { minValue: 0, maxValue: 8 },
+			},
+			{
+				displayName: 'Reissuable',
+				name: 'reissuable',
+				type: 'boolean',
+				displayOptions: { show: { resource: ['transaction'], operation: ['issue'] } },
+				default: true,
+				description: 'Whether token supply can be increased later',
+			},
+
+			// === BURN FIELDS ===
+			{
+				displayName: 'Asset ID',
+				name: 'assetId',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['burn'] } },
+				default: '',
+				required: true,
+				description: 'ID of asset to burn',
+			},
+			{
+				displayName: 'Amount to Burn',
+				name: 'quantity',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['burn'] } },
+				default: '',
+				required: true,
+				description: 'Amount to burn in smallest units',
+			},
+
+			// === LEASE FIELDS ===
+			{
+				displayName: 'Recipient Address',
+				name: 'recipient',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['lease'] } },
+				default: '',
+				required: true,
+				description: 'Address to lease DCC to',
+			},
+			{
+				displayName: 'Amount to Lease',
+				name: 'amount',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['lease'] } },
+				default: '',
+				required: true,
+				description: 'Amount of DCC to lease (in smallest units)',
+			},
+
+			// === CANCEL LEASE FIELDS ===
+			{
+				displayName: 'Lease ID',
+				name: 'leaseId',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['cancelLease'] } },
+				default: '',
+				required: true,
+				description: 'ID of lease transaction to cancel',
+			},
+
+			// === ALIAS FIELDS ===
+			{
+				displayName: 'Alias Name',
+				name: 'aliasName',
+				type: 'string',
+				displayOptions: { show: { resource: ['transaction'], operation: ['alias'] } },
+				default: '',
+				required: true,
+				description: 'Alias name (4-30 characters, alphanumeric)',
 			},
 			{
 				displayName: 'Operation',
@@ -183,54 +469,331 @@ export class Dcc implements INodeType {
 			const credentials = await this.getCredentials('dccApi');
 			const baseUrl = credentials?.baseUrl || this.getNodeParameter('baseUrl', i) as string;
 
-			let endpoint = '';
-			let method = 'GET';
-			let body: IDataObject | undefined;
-
-			// Build endpoint based on resource and operation
-			if (resource === 'account' && operation === 'getAccount') {
-				const address = this.getNodeParameter('address', i) as string;
-				endpoint = `/addresses/balance/${address}`;
-			} else if (resource === 'token' && operation === 'getToken') {
-				const assetId = this.getNodeParameter('assetId', i) as string;
-				endpoint = `/assets/details/${assetId}`;
-			} else if (resource === 'transaction' && operation === 'listTransactions') {
-				const ownerAddress = this.getNodeParameter('ownerAddress', i) as string;
-				const limit = this.getNodeParameter('limit', i) as number;
-				const offset = this.getNodeParameter('offset', i) as string;
-				endpoint = `/transactions/address/${ownerAddress}/limit/${limit}?after=${offset}`;
-			} else if (resource === 'transaction' && operation === 'broadcastTransaction') {
-				const txJson = this.getNodeParameter('txJson', i) as string;
-				endpoint = '/transactions/broadcast';
-				method = 'POST';
-				body = JSON.parse(txJson);
-			} else if (resource === 'utility' && operation === 'generateAddress') {
-				const publicKey = this.getNodeParameter('publicKey', i) as string;
-				endpoint = `/addresses/publicKey/${publicKey}`;
-			} else if (resource === 'utility' && operation === 'validateAddress') {
-				const addressToValidate = this.getNodeParameter('addressToValidate', i) as string;
-				endpoint = `/addresses/validate/${addressToValidate}`;
-			} else {
-				endpoint = '/node/status';
-			}
-
 			try {
-				const options = {
-					method,
-					url: `${baseUrl}${endpoint}`,
-					headers: {
-						'Content-Type': 'application/json',
-						'Accept': 'application/json',
-					},
-					json: true,
-				} as any;
+				// === TRANSACTION OPERATIONS ===
+				if (resource === 'transaction') {
+					// Get common transaction parameters
+					const chainId = this.getNodeParameter('chainId', i, 'L') as string;
+					const authMethod = this.getNodeParameter('authMethod', i, 'seed') as string;
+					const autoBroadcast = this.getNodeParameter('autoBroadcast', i, false) as boolean;
 
-				if (body) {
-					options.body = body;
+					let authData;
+					if (authMethod === 'seed') {
+						authData = this.getNodeParameter('seedPhrase', i) as string;
+					} else if (authMethod === 'privateKey') {
+						authData = { privateKey: this.getNodeParameter('privateKey', i) as string };
+					} else {
+						authData = undefined; // unsigned transaction
+					}
+
+					let transaction;
+
+					// === TRANSFER TRANSACTION ===
+					if (operation === 'transfer') {
+						const recipient = this.getNodeParameter('recipient', i) as string;
+						const amount = this.getNodeParameter('amount', i) as string;
+						const assetId = this.getNodeParameter('assetId', i, null) as string | null;
+						const attachment = this.getNodeParameter('attachment', i, '') as string;
+
+						const transferParams: any = {
+							recipient,
+							amount,
+							assetId: assetId || null,
+							attachment: attachment || undefined,
+							chainId,
+						};
+
+						if (authMethod === 'unsigned') {
+							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
+							transferParams.senderPublicKey = senderPublicKey;
+							transaction = transfer(transferParams);
+						} else {
+							transaction = transfer(transferParams, authData);
+						}
+					}
+
+					// === ISSUE TOKEN ===
+					else if (operation === 'issue') {
+						const tokenName = this.getNodeParameter('tokenName', i) as string;
+						const tokenDescription = this.getNodeParameter('tokenDescription', i) as string;
+						const quantity = this.getNodeParameter('quantity', i) as string;
+						const decimals = this.getNodeParameter('decimals', i, 8) as number;
+						const reissuable = this.getNodeParameter('reissuable', i, true) as boolean;
+
+						const issueParams: any = {
+							name: tokenName,
+							description: tokenDescription,
+							quantity,
+							decimals,
+							reissuable,
+							chainId,
+						};
+
+						if (authMethod === 'unsigned') {
+							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
+							issueParams.senderPublicKey = senderPublicKey;
+							transaction = issue(issueParams);
+						} else {
+							transaction = issue(issueParams, authData);
+						}
+					}
+
+					// === BURN TOKENS ===
+					else if (operation === 'burn') {
+						const assetId = this.getNodeParameter('assetId', i) as string;
+						const quantity = this.getNodeParameter('quantity', i) as string;
+
+						const burnParams: any = {
+							assetId,
+							quantity,
+							chainId,
+						};
+
+						if (authMethod === 'unsigned') {
+							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
+							burnParams.senderPublicKey = senderPublicKey;
+							transaction = burn(burnParams);
+						} else {
+							transaction = burn(burnParams, authData);
+						}
+					}
+
+					// === LEASE DCC ===
+					else if (operation === 'lease') {
+						const recipient = this.getNodeParameter('recipient', i) as string;
+						const amount = this.getNodeParameter('amount', i) as string;
+
+						const leaseParams: any = {
+							recipient,
+							amount,
+							chainId,
+						};
+
+						if (authMethod === 'unsigned') {
+							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
+							leaseParams.senderPublicKey = senderPublicKey;
+							transaction = lease(leaseParams);
+						} else {
+							transaction = lease(leaseParams, authData);
+						}
+					}
+
+					// === CANCEL LEASE ===
+					else if (operation === 'cancelLease') {
+						const leaseId = this.getNodeParameter('leaseId', i) as string;
+
+						const cancelLeaseParams: any = {
+							leaseId,
+							chainId,
+						};
+
+						if (authMethod === 'unsigned') {
+							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
+							cancelLeaseParams.senderPublicKey = senderPublicKey;
+							transaction = cancelLease(cancelLeaseParams);
+						} else {
+							transaction = cancelLease(cancelLeaseParams, authData);
+						}
+					}
+
+					// === CREATE ALIAS ===
+					else if (operation === 'alias') {
+						const aliasName = this.getNodeParameter('aliasName', i) as string;
+
+						const aliasParams: any = {
+							alias: aliasName,
+							chainId,
+						};
+
+						if (authMethod === 'unsigned') {
+							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
+							aliasParams.senderPublicKey = senderPublicKey;
+							transaction = alias(aliasParams);
+						} else {
+							transaction = alias(aliasParams, authData);
+						}
+					}
+
+					// === QUERY OPERATIONS ===
+					else if (operation === 'listTransactions') {
+						const ownerAddress = this.getNodeParameter('ownerAddress', i) as string;
+						const limit = this.getNodeParameter('limit', i, 50) as number;
+						const offset = this.getNodeParameter('offset', i, 0) as string;
+						const endpoint = `/transactions/address/${ownerAddress}/limit/${limit}?after=${offset}`;
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+						continue;
+					}
+
+					else if (operation === 'getTransaction') {
+						const transactionId = this.getNodeParameter('transactionId', i) as string;
+						const endpoint = `/transactions/info/${transactionId}`;
+
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+						continue;
+					}
+
+					// Handle transaction broadcasting
+					if (transaction) {
+						if (autoBroadcast && authMethod !== 'unsigned') {
+							try {
+								const broadcastResult = await broadcast(transaction, baseUrl);
+								returnData.push({ 
+									json: { 
+										transaction,
+										broadcastResult,
+										status: 'broadcasted'
+									}
+								});
+							} catch (broadcastError) {
+								returnData.push({ 
+									json: { 
+										transaction,
+										broadcastError: broadcastError.message,
+										status: 'broadcast_failed'
+									}
+								});
+							}
+						} else {
+							returnData.push({ json: { transaction, status: 'created' } });
+						}
+					}
 				}
 
-				const response = await this.helpers.httpRequest(options);
-				returnData.push({ json: response });
+				// === ACCOUNT OPERATIONS ===
+				else if (resource === 'account') {
+					const address = this.getNodeParameter('address', i) as string;
+
+					if (operation === 'getAccount') {
+						const endpoint = `/addresses/balance/${address}`;
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+
+					else if (operation === 'getAllAssetBalances') {
+						const endpoint = `/assets/balance/${address}`;
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+
+					else if (operation === 'getAssetBalance') {
+						const assetId = this.getNodeParameter('assetId', i) as string;
+						const endpoint = `/assets/balance/${address}/${assetId}`;
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+				}
+
+				// === TOKEN OPERATIONS ===
+				else if (resource === 'token') {
+					if (operation === 'getToken') {
+						const assetId = this.getNodeParameter('assetId', i) as string;
+						const endpoint = `/assets/details/${assetId}`;
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+
+					else if (operation === 'getMultipleTokens') {
+						const assetIds = this.getNodeParameter('assetIds', i) as string;
+						const idArray = assetIds.split(',').map(id => id.trim());
+						const queryParams = idArray.map(id => `id=${id}`).join('&');
+						const endpoint = `/assets/details?${queryParams}`;
+						
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+
+					else if (operation === 'getNFTs') {
+						const address = this.getNodeParameter('address', i) as string;
+						const limit = this.getNodeParameter('limit', i, 100) as number;
+						const endpoint = `/assets/nft/${address}/limit/${limit}`;
+						
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+				}
+
+				// === UTILITY OPERATIONS ===
+				else if (resource === 'utility') {
+					if (operation === 'generateAddress') {
+						const publicKey = this.getNodeParameter('publicKey', i) as string;
+						const endpoint = `/addresses/publicKey/${publicKey}`;
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+
+					else if (operation === 'validateAddress') {
+						const addressToValidate = this.getNodeParameter('addressToValidate', i) as string;
+						const endpoint = `/addresses/validate/${addressToValidate}`;
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+
+					else if (operation === 'getAliases') {
+						const address = this.getNodeParameter('address', i) as string;
+						const endpoint = `/alias/by-address/${address}`;
+						const response = await this.helpers.httpRequest({
+							method: 'GET',
+							url: `${baseUrl}${endpoint}`,
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+							json: true,
+						});
+						returnData.push({ json: response });
+					}
+				}
+
 			} catch (error) {
 				if (this.continueOnFail()) {
 					returnData.push({ json: { error: error.message } });
