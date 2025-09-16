@@ -219,10 +219,10 @@ export class Dcc implements INodeType {
 					},
 				},
 				options: [
-					{ name: 'Mainnet (L)', value: 'L' },
-					{ name: 'Testnet (T)', value: 'T' },
+					{ name: 'Mainnet (?)', value: '?' },
+					{ name: 'Testnet (!)', value: '!' },
 				],
-				default: 'L',
+				default: '?',
 				description: 'Network to create transaction for',
 			},
 			{
@@ -248,13 +248,12 @@ export class Dcc implements INodeType {
 				displayOptions: { show: { resource: ['transaction'], operation: ['transfer'] } },
 				default: '',
 				required: true,
-				description: 'DCC address or alias (format: alias:L:myalias for mainnet)',
+				description: 'DCC address or alias (format: alias:?:myalias for mainnet)',
 			},
 			{
 				displayName: 'Amount',
 				name: 'amount',
 				type: 'string',
-				typeOptions: { password: true },
 				displayOptions: { show: { resource: ['transaction'], operation: ['transfer'] } },
 				default: '',
 				required: true,
@@ -489,7 +488,7 @@ export class Dcc implements INodeType {
 				// === TRANSACTION OPERATIONS ===
 				if (resource === 'transaction') {
 					// Get common transaction parameters
-					const chainId = this.getNodeParameter('chainId', i, 'L') as string;
+					const chainId = this.getNodeParameter('chainId', i, '?') as string;
 					const authMethod = this.getNodeParameter('authMethod', i, 'seed') as string;
 					const autoBroadcast = this.getNodeParameter('autoBroadcast', i, false) as boolean;
 
@@ -666,16 +665,16 @@ export class Dcc implements INodeType {
 						if (autoBroadcast && authMethod !== 'unsigned') {
 							try {
 								const broadcastResult = await broadcast(transaction, baseUrl as string);
-								returnData.push({ 
-									json: { 
+								returnData.push({
+									json: {
 										transaction,
 										broadcastResult,
 										status: 'broadcasted'
 									}
 								});
 							} catch (broadcastError) {
-								returnData.push({ 
-									json: { 
+								returnData.push({
+									json: {
 										transaction,
 										broadcastError: (broadcastError as Error).message,
 										status: 'broadcast_failed'
@@ -746,7 +745,7 @@ export class Dcc implements INodeType {
 						const idArray = assetIds.split(',').map(id => id.trim());
 						const queryParams = idArray.map(id => `id=${id}`).join('&');
 						const endpoint = `/assets/details?${queryParams}`;
-						
+
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
 							url: `${baseUrl}${endpoint}`,
@@ -760,7 +759,7 @@ export class Dcc implements INodeType {
 						const address = this.getNodeParameter('address', i) as string;
 						const limit = this.getNodeParameter('limit', i, 100) as number;
 						const endpoint = `/assets/nft/${address}/limit/${limit}`;
-						
+
 						const response = await this.helpers.httpRequest({
 							method: 'GET',
 							url: `${baseUrl}${endpoint}`,
