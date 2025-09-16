@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Additional DCC operations (staking, leasing, governance endpoints)
 - Planned: Test suite for validation helpers
 
+## [0.1.6] - 2025-09-16
+### Fixed
+- Release workflow now uses correct NPM_SECRET environment variable name
+
 ## [0.1.5] - 2025-09-16
 ### Added
 - Complete DCC node implementation with routing for accounts, tokens, transactions, and utilities
