@@ -642,7 +642,18 @@ export class Dcc implements INodeType {
 							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 							json: true,
 						});
-						returnData.push({ json: response });
+						returnData.push({
+							json: {
+								...response,
+								debug: {
+									operation,
+									endpoint,
+									baseUrl,
+									parameters: { ownerAddress, limit, offset },
+									timestamp: new Date().toISOString()
+								}
+							}
+						});
 						continue;
 					}
 
@@ -656,7 +667,18 @@ export class Dcc implements INodeType {
 							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 							json: true,
 						});
-						returnData.push({ json: response });
+						returnData.push({
+							json: {
+								...response,
+								debug: {
+									operation,
+									endpoint,
+									baseUrl,
+									parameters: { transactionId },
+									timestamp: new Date().toISOString()
+								}
+							}
+						});
 						continue;
 					}
 
@@ -669,7 +691,16 @@ export class Dcc implements INodeType {
 									json: {
 										transaction,
 										broadcastResult,
-										status: 'broadcasted'
+										status: 'broadcasted',
+										debug: {
+											operation,
+											chainId,
+											authMethod,
+											baseUrl,
+											transactionId: transaction.id || 'unknown',
+											timestamp: new Date().toISOString(),
+											broadcastSuccess: true
+										}
 									}
 								});
 							} catch (broadcastError) {
@@ -677,12 +708,39 @@ export class Dcc implements INodeType {
 									json: {
 										transaction,
 										broadcastError: (broadcastError as Error).message,
-										status: 'broadcast_failed'
+										status: 'broadcast_failed',
+										debug: {
+											operation,
+											chainId,
+											authMethod,
+											baseUrl,
+											transactionId: transaction.id || 'unknown',
+											timestamp: new Date().toISOString(),
+											broadcastSuccess: false,
+											errorDetails: {
+												name: (broadcastError as Error).name,
+												stack: (broadcastError as Error).stack?.split('\n').slice(0, 3).join('\n')
+											}
+										}
 									}
 								});
 							}
 						} else {
-							returnData.push({ json: { transaction, status: 'created' } });
+							returnData.push({
+								json: {
+									transaction,
+									status: 'created',
+									debug: {
+										operation,
+										chainId,
+										authMethod,
+										baseUrl,
+										transactionId: transaction.id || 'unknown',
+										timestamp: new Date().toISOString(),
+										note: authMethod === 'unsigned' ? 'Unsigned transaction created' : 'Auto-broadcast disabled'
+									}
+								}
+							});
 						}
 					}
 				}

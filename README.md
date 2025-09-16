@@ -4,7 +4,7 @@
 
 <p align="left">
   <a href="https://www.npmjs.com/package/n8n-nodes-dcc"><img src="https://img.shields.io/npm/v/n8n-nodes-dcc.svg" alt="npm version"></a>
-  <a href="https://github.com/elwizard33/n8n-nodes-dcc/actions/workflows/ci.yml"><img src="https://github.com/elwizard33/n8n-nodes-dcc/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/elwizard33/DCC-Node-API-N8N/actions/workflows/ci.yml"><img src="https://github.com/elwizard33/DCC-Node-API-N8N/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/n8n-nodes-dcc"><img src="https://img.shields.io/npm/dm/n8n-nodes-dcc.svg" alt="npm downloads"></a>
   <a href="./LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="license: MIT"></a>
 </p>
