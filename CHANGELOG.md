@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Additional DCC operations (staking, leasing, governance endpoints)
 - Planned: Test suite for validation helpers
 
+## [0.1.2] - 2025-09-15
+### Added
+- README badges, installation, semantic versioning & manual release guidance
+- CONTRIBUTING expanded with release & versioning steps
+- Automated release publish GitHub Action on tags
+- Jest test harness & initial metadata test
+### Changed
+- Enhanced package metadata (homepage, bugs url, keywords, ci script)
+### Security
+- Security policy with upstream advisory documentation
+
 ## [0.1.1] - 2025-09-15
 ### Added
 - Initial DCC package metadata (renamed, description, keywords)
