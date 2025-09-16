@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Additional DCC operations (staking, leasing, governance endpoints)
 - Planned: Test suite for validation helpers
 
+## [0.1.5] - 2025-09-16
+### Added
+- Complete DCC node implementation with routing for accounts, tokens, transactions, and utilities
+- DccApi credential with token authentication and node status testing
+- Force-copy fallback script to ensure build artifacts in CI environments
+### Fixed
+- Missing DCC source files committed to repository (were previously untracked)
+- TypeScript compilation issues with IExecuteFunctions interface
+- Build artifact verification with retry logic and debug output
+- Lint issues in credential documentation URLs
+
 ## [0.1.2] - 2025-09-15
 ### Added
 - README badges, installation, semantic versioning & manual release guidance
