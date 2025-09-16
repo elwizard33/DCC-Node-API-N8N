@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.2.3] - 2025-09-16
+### Added
+- **Debug logging**: Comprehensive debug information added to all transaction and query results
+- **Error reporting**: Enhanced error details with stack traces for failed broadcasts
+- **API debugging**: Parameter logging for all API query operations
+- **Troubleshooting**: Timestamp, operation type, chain ID, and auth method in debug logs
+
+### Fixed
+- **README badge**: Corrected GitHub Actions badge URL to use proper repository name
+
 ## [0.2.2] - 2025-09-16
 ### Fixed
 - **Chain ID symbols**: Corrected mainnet to '?' and testnet to '!' (previously incorrect 'L' and 'T')
