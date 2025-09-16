@@ -1,10 +1,4 @@
-import { IExecuteFunctions } from 'n8n-core';
-import {
-	INodeExecutionData,
-	INodeType,
-	INodeTypeDescription,
-	NodeOperationError,
-} from 'n8n-workflow';
+import { INodeExecutionData, INodeType, INodeTypeDescription, NodeOperationError } from 'n8n-workflow';
 
 export class ExampleNode implements INodeType {
 	description: INodeTypeDescription = {
@@ -36,7 +30,7 @@ export class ExampleNode implements INodeType {
 	// is supposed to do. In this case, we're just appending the `myString` property
 	// with whatever the user has entered.
 	// You can make async calls and use `await`.
-	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+	async execute(this: any): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 
 		let item: INodeExecutionData;
@@ -58,15 +52,13 @@ export class ExampleNode implements INodeType {
 					items.push({ json: this.getInputData(itemIndex)[0].json, error, pairedItem: itemIndex });
 				} else {
 					// Adding `itemIndex` allows other workflows to handle this error
-					if (error.context) {
+					if ((error as any).context) {
 						// If the error thrown already contains the context property,
 						// only append the itemIndex
-						error.context.itemIndex = itemIndex;
+						(error as any).context.itemIndex = itemIndex;
 						throw error;
 					}
-					throw new NodeOperationError(this.getNode(), error, {
-						itemIndex,
-					});
+					throw new NodeOperationError(this.getNode(), error as Error, { itemIndex });
 				}
 			}
 		}
