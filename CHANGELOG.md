@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Additional DCC operations (staking, leasing, governance endpoints)
 - Planned: Test suite for validation helpers
 
+## [0.1.7] - 2025-09-16
+### Fixed
+- Replace placeholder routing with proper execute method implementation
+- Fix 404 errors when making API requests to DCC nodes
+- Add complete endpoint construction for all operations (account, token, transaction, utility)
+- Implement proper error handling and response formatting
+- Remove faulty routing configuration that caused runtime failures
+
 ## [0.1.6] - 2025-09-16
 ### Fixed
 - Release workflow now uses correct NPM_SECRET environment variable name
