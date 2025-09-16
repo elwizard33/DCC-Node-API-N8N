@@ -1,3 +1,4 @@
+tmp
 node_modules
 .DS_Store
 .tmp
@@ -5,4 +6,7 @@ tmp
 dist
 npm-debug.log*
 yarn.lock
-.vscode/launch.json
+# Ignore entire VS Code configuration
+.vscode/
+# Ignore shrimp task manager data directory
+.shrimp-data/
