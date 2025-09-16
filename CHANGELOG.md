@@ -9,6 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.2.5] - 2025-09-16
+### Fixed
+- **Library loading**: Improved waves-transactions library loading with multiple fallback paths for n8n environments
+- **Dependency bundling**: Added bundledDependencies to ensure @decentralchain/waves-transactions is packaged with the node
+- **Error diagnostics**: Enhanced library loading error logging with module paths and working directory info
+- **Code quality**: Fixed duplicate variable declarations in library initialization
+
+## [0.2.4] - 2025-09-16
+### Added
+- **Enhanced debugging**: Extensive debug logging for transaction creation, broadcast, and library loading
+- **Private key validation**: Improved private key handling and authentication checks
+- **Transaction diagnostics**: Added transaction type, version, proof, and signature details to debug output
+- **Broadcast verification**: Enhanced broadcast result validation and error handling
+
 ## [0.2.3] - 2025-09-16
 ### Added
 - **Debug logging**: Comprehensive debug information added to all transaction and query results
