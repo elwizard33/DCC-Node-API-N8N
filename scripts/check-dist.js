@@ -23,7 +23,22 @@ async function waitFor(paths, attempts = 5, delayMs = 250) {
   return paths.filter((rel) => !fs.existsSync(path.resolve(rel)));
 }
 
+// Fallback: if Dcc artifacts missing but source exists, try copying assets again (icons) without rerunning full build
+function fallbackCopy() {
+  const svgSrc = path.resolve('nodes', 'Dcc', 'dcc.svg');
+  const svgDestDir = path.resolve('dist', 'nodes', 'Dcc');
+  if (fs.existsSync(svgSrc) && !fs.existsSync(path.join(svgDestDir, 'dcc.svg'))) {
+    fs.mkdirSync(svgDestDir, { recursive: true });
+    fs.copyFileSync(svgSrc, path.join(svgDestDir, 'dcc.svg'));
+  }
+}
+
 waitFor(required).then((missing) => {
+  if (missing.length) {
+    fallbackCopy();
+  }
+  return waitFor(required, 2, 150);
+}).then((missing) => {
   if (missing.length) {
     console.error('\n[check-dist] Missing required build artifacts after retries:');
     for (const m of missing) console.error(' - ' + m);
