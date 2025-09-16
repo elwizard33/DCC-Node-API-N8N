@@ -1,4 +1,4 @@
-import { Dcc } from '../nodes/Dcc';
+import { Dcc } from '../nodes/Dcc/Dcc.node';
 
 describe('Dcc node description', () => {
   it('should expose expected basic metadata', () => {

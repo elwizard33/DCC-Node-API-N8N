@@ -25,8 +25,8 @@
 		"credentials/**/*",
 		"nodes/**/*",
 		"nodes/**/*.json",
-		"tests/**/*",
 		"jest.config.cjs",
-		"package.json",
+		"package.json"
 	],
+	"exclude": ["tests/**/*"]
 }
