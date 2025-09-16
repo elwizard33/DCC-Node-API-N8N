@@ -5,8 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres (in spirit) to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Planned: Additional DCC operations (staking, leasing, governance endpoints)
-- Planned: Test suite for validation helpers
+- Planned: Additional transaction types (reissue, massTransfer, data, invokeScript, setScript, setAssetScript, sponsorship, updateAssetInfo)
+- Planned: Advanced NFT operations and asset distribution analytics
+- Planned: Test suite for transaction validation
+
+## [0.2.0] - 2025-09-16
+### Added
+- **MAJOR**: Integration with @decentralchain/waves-transactions library for native transaction creation
+- **Transaction Operations**: Transfer, Issue, Burn, Lease, Cancel Lease, Create Alias
+- **Enhanced Query Operations**: All asset balances, specific asset balance, multiple token details, NFTs, aliases
+- **Multiple Authentication Methods**: Seed phrase, private key, unsigned transaction creation
+- **Network Support**: Mainnet (L) and Testnet (T) selection
+- **Auto-broadcast**: Optional automatic transaction broadcasting with error handling
+- **User-friendly Interface**: Intuitive parameter names, descriptions, and validation
+- **Security**: Secure handling of sensitive credentials with proper field masking
+
+### Enhanced
+- Complete rewrite of transaction handling using professional-grade library
+- Improved error handling with detailed feedback
+- Rich transaction status reporting (created, broadcasted, failed)
+- Portfolio management capabilities with comprehensive asset queries
+- NFT ecosystem support for modern DCC applications
+
+### Technical
+- Type-safe parameter handling throughout
+- Backward compatibility maintained for existing workflows
+- Professional transaction signing and validation
+- Comprehensive API endpoint coverage for DCC blockchain
 
 ## [0.1.7] - 2025-09-16
 ### Fixed
