@@ -33,7 +33,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npx rimraf dist && tsc && gulp build:icons",
-    "postbuild": "echo '[debug] dist after build:' && find dist -maxdepth 3 -type f -print || true",
+    "postbuild": "node scripts/force-copy-dcc.js && echo '[debug] dist after build:' && find dist -maxdepth 3 -type f -print || true",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
