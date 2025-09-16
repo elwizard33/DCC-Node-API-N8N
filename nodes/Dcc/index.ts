@@ -1,1 +1,2 @@
-export * from './Dcc.node';
+import { Dcc } from './Dcc.node';
+export { Dcc };
