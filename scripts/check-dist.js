@@ -3,25 +3,38 @@
 const fs = require('fs');
 const path = require('path');
 
-const required = [
-  'dist/credentials/DccApi.credentials.js',
-  'dist/nodes/Dcc/Dcc.node.js',
+// Derive expected artifacts from package.json n8n manifest plus static extras
+const pkg = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf8'));
+const manifest = pkg.n8n || {};
+const credArtifacts = (manifest.credentials || []).map((p) => p.replace(/\.js$/, '.js'));
+const nodeArtifacts = (manifest.nodes || []).map((p) => p.replace(/\.js$/, '.js'));
+// Extra assets that must accompany certain nodes (svg icons referenced via file: syntax)
+const staticExtras = [
   'dist/nodes/Dcc/dcc.svg',
 ];
+const required = Array.from(new Set([...credArtifacts, ...nodeArtifacts, ...staticExtras]));
 
-let missing = [];
-for (const rel of required) {
-  const p = path.resolve(rel);
-  if (!fs.existsSync(p)) {
-    missing.push(rel);
+async function waitFor(paths, attempts = 5, delayMs = 250) {
+  for (let i = 0; i < attempts; i++) {
+    const missingNow = paths.filter((rel) => !fs.existsSync(path.resolve(rel)));
+    if (!missingNow.length) return [];
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
   }
+  return paths.filter((rel) => !fs.existsSync(path.resolve(rel)));
 }
 
-if (missing.length) {
-  console.error('\n[check-dist] Missing required build artifacts:');
-  for (const m of missing) console.error(' - ' + m);
-  console.error('\nRun: npm run build');
-  process.exit(1);
-}
-
-console.log('[check-dist] All required artifacts present.');
+waitFor(required).then((missing) => {
+  if (missing.length) {
+    console.error('\n[check-dist] Missing required build artifacts after retries:');
+    for (const m of missing) console.error(' - ' + m);
+    // Debug directory listings for diagnostics
+    try {
+      const list = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir) : []);
+      console.error('\n[debug] dist/credentials:', list('dist/credentials'));
+      console.error('[debug] dist/nodes/Dcc:', list('dist/nodes/Dcc'));
+    } catch {}
+    console.error('\nRun: npm run build');
+    process.exit(1);
+  }
+  console.log('[check-dist] All required artifacts present.');
+});
