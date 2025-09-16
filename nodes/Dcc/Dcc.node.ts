@@ -9,19 +9,24 @@ import {
 
 // Import waves-transactions library conditionally for testing
 let wavesTransactions: any;
+let isLibraryLoaded = false;
 try {
 	wavesTransactions = require('@decentralchain/waves-transactions');
+	isLibraryLoaded = true;
+	console.log('wavestransactions library loaded successfully - Dcc.node.ts:16');
 } catch (error) {
+	console.warn('wavestransactions library not found, using mocks for testing - Dcc.node.ts:18');
 	// Fallback for tests - mock the functions
 	wavesTransactions = {
-		alias: () => ({}),
-		burn: () => ({}),
-		cancelLease: () => ({}),
-		issue: () => ({}),
-		lease: () => ({}),
-		transfer: () => ({}),
-		broadcast: () => Promise.resolve({}),
+		alias: () => ({ id: 'mock-alias-id', type: 10 }),
+		burn: () => ({ id: 'mock-burn-id', type: 6 }),
+		cancelLease: () => ({ id: 'mock-cancel-lease-id', type: 9 }),
+		issue: () => ({ id: 'mock-issue-id', type: 3 }),
+		lease: () => ({ id: 'mock-lease-id', type: 8 }),
+		transfer: () => ({ id: 'mock-transfer-id', type: 4 }),
+		broadcast: () => Promise.resolve({ id: 'mock-broadcast-result' }),
 	};
+	isLibraryLoaded = false;
 }
 
 const {
@@ -487,6 +492,14 @@ export class Dcc implements INodeType {
 			try {
 				// === TRANSACTION OPERATIONS ===
 				if (resource === 'transaction') {
+					// Check if the waves-transactions library is properly loaded
+					if (!isLibraryLoaded) {
+						throw new NodeApiError(this.getNode(), {
+							message: 'waves-transactions library not available. Please ensure @decentralchain/waves-transactions is properly installed.',
+							description: 'Run: npm install @decentralchain/waves-transactions'
+						});
+					}
+
 					// Get common transaction parameters
 					const chainId = this.getNodeParameter('chainId', i, '?') as string;
 					const authMethod = this.getNodeParameter('authMethod', i, 'seed') as string;
@@ -518,6 +531,11 @@ export class Dcc implements INodeType {
 							chainId,
 						};
 
+						// Debug: Log the parameters before creating transaction
+						console.log('Transfer parameters: - Dcc.node.ts:535', transferParams);
+						console.log('Auth method: - Dcc.node.ts:536', authMethod);
+						console.log('Auth data type: - Dcc.node.ts:537', typeof authData, authData ? 'present' : 'missing');
+
 						if (authMethod === 'unsigned') {
 							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
 							transferParams.senderPublicKey = senderPublicKey;
@@ -525,6 +543,10 @@ export class Dcc implements INodeType {
 						} else {
 							transaction = transfer(transferParams, authData);
 						}
+
+						// Debug: Log the created transaction
+						console.log('Created transaction: - Dcc.node.ts:548', transaction);
+						console.log('Transaction ID: - Dcc.node.ts:549', transaction?.id);
 					}
 
 					// === ISSUE TOKEN ===
@@ -684,9 +706,14 @@ export class Dcc implements INodeType {
 
 					// Handle transaction broadcasting
 					if (transaction) {
+						console.log('About to broadcast transaction: - Dcc.node.ts:709', JSON.stringify(transaction, null, 2));
+						
 						if (autoBroadcast && authMethod !== 'unsigned') {
 							try {
+								console.log('Broadcasting to: - Dcc.node.ts:713', baseUrl);
 								const broadcastResult = await broadcast(transaction, baseUrl as string);
+								console.log('Broadcast result: - Dcc.node.ts:715', broadcastResult);
+								
 								returnData.push({
 									json: {
 										transaction,
@@ -699,11 +726,18 @@ export class Dcc implements INodeType {
 											baseUrl,
 											transactionId: transaction.id || 'unknown',
 											timestamp: new Date().toISOString(),
-											broadcastSuccess: true
+											broadcastSuccess: true,
+											transactionDetails: {
+												type: transaction.type,
+												version: transaction.version,
+												proofs: transaction.proofs?.length || 0,
+												hasSignature: !!transaction.signature
+											}
 										}
 									}
 								});
 							} catch (broadcastError) {
+								console.error('Broadcast error: - Dcc.node.ts:740', broadcastError);
 								returnData.push({
 									json: {
 										transaction,
@@ -737,11 +771,31 @@ export class Dcc implements INodeType {
 										baseUrl,
 										transactionId: transaction.id || 'unknown',
 										timestamp: new Date().toISOString(),
-										note: authMethod === 'unsigned' ? 'Unsigned transaction created' : 'Auto-broadcast disabled'
+										note: authMethod === 'unsigned' ? 'Unsigned transaction created' : 'Auto-broadcast disabled',
+										transactionDetails: {
+											type: transaction.type,
+											version: transaction.version,
+											proofs: transaction.proofs?.length || 0,
+											hasSignature: !!transaction.signature
+										}
 									}
 								}
 							});
 						}
+					} else {
+						console.error('No transaction was created! - Dcc.node.ts:786');
+						returnData.push({
+							json: {
+								error: 'Failed to create transaction',
+								debug: {
+									operation,
+									chainId,
+									authMethod,
+									baseUrl,
+									timestamp: new Date().toISOString()
+								}
+							}
+						});
 					}
 				}
 
