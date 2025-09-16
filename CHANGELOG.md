@@ -23,6 +23,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 ### Fixed
 - Synchronized package-lock.json with dependency upgrades (previous publish workflow failed `npm ci` due to lock mismatch)
 
+## [0.1.4] - 2025-09-15
+### Fixed
+- Committed regenerated package-lock.json (prior tag still missed lockfile update causing npm ci failure in workflow)
+
 ## [0.1.1] - 2025-09-15
 ### Added
 - Initial DCC package metadata (renamed, description, keywords)
