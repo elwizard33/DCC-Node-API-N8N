@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-dcc",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "n8n community nodes for interacting with DecentralChain (DCC) node REST API (accounts, tokens, transactions, utilities).",
   "keywords": [
     "n8n-community-node-package",
