@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.2.1] - 2025-09-16
+### Fixed
+- **Jest compatibility**: Resolved module resolution issue for @decentralchain/waves-transactions in test environment
+- **CI/CD tests**: Fixed test failures in GitHub Actions by using conditional imports
+- **TypeScript errors**: Fixed type casting for broadcast function parameters
+- **Testing workflow**: Tests now pass both locally and in CI environment
+
 ## [0.2.0] - 2025-09-16
 ### Added
 - **MAJOR**: Integration with @decentralchain/waves-transactions library for native transaction creation
