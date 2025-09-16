@@ -81,5 +81,8 @@
   },
   "dependencies": {
     "@decentralchain/waves-transactions": "^4.2.6"
-  }
+  },
+  "bundledDependencies": [
+    "@decentralchain/waves-transactions"
+  ]
 }

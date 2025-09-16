@@ -7,16 +7,52 @@ import {
 	NodeApiError,
 } from 'n8n-workflow';
 
-// Import waves-transactions library conditionally for testing
+// Import waves-transactions library
 let wavesTransactions: any;
 let isLibraryLoaded = false;
+
 try {
-	wavesTransactions = require('@decentralchain/waves-transactions');
+	// Try multiple import methods to handle different environments
+	try {
+		wavesTransactions = require('@decentralchain/waves-transactions');
+	} catch (requireError) {
+		// Try dynamic import as fallback
+		console.log('Standard require failed, attempting alternative loading methods - Dcc.node.ts:20');
+		
+		// Common n8n paths to check
+		const possiblePaths = [
+			'@decentralchain/waves-transactions',
+			'./node_modules/@decentralchain/waves-transactions',
+			'../node_modules/@decentralchain/waves-transactions',
+			'../../node_modules/@decentralchain/waves-transactions',
+			'/home/node/.n8n/nodes/node_modules/n8n-nodes-dcc/node_modules/@decentralchain/waves-transactions'
+		];
+		
+		let loadSuccess = false;
+		for (const modulePath of possiblePaths) {
+			try {
+				wavesTransactions = require(modulePath);
+				console.log(`Successfully loaded from: ${modulePath} - Dcc.node.ts:35`);
+				loadSuccess = true;
+				break;
+			} catch (pathError) {
+				console.log(`Failed to load from: ${modulePath} - Dcc.node.ts:39`);
+			}
+		}
+		
+		if (!loadSuccess) {
+			throw requireError;
+		}
+	}
+	
 	isLibraryLoaded = true;
-	console.log('wavestransactions library loaded successfully - Dcc.node.ts:16');
+	console.log('wavestransactions library loaded successfully - Dcc.node.ts:49');
 } catch (error) {
-	console.warn('wavestransactions library not found, using mocks for testing - Dcc.node.ts:18');
-	// Fallback for tests - mock the functions
+	console.error('wavestransactions library loading failed with error: - Dcc.node.ts:51', error.message, '');
+	console.error('Current working directory: - Dcc.node.ts:52', process.cwd(), '');
+	console.error('Module paths: - Dcc.node.ts:53', JSON.stringify(require.resolve.paths('@decentralchain/waves-transactions'), null, 2), '');
+	
+	// Fallback for tests or when library is not available
 	wavesTransactions = {
 		alias: () => ({ id: 'mock-alias-id', type: 10 }),
 		burn: () => ({ id: 'mock-burn-id', type: 6 }),
@@ -532,9 +568,9 @@ export class Dcc implements INodeType {
 						};
 
 						// Debug: Log the parameters before creating transaction
-						console.log('Transfer parameters: - Dcc.node.ts:535', transferParams);
-						console.log('Auth method: - Dcc.node.ts:536', authMethod);
-						console.log('Auth data type: - Dcc.node.ts:537', typeof authData, authData ? 'present' : 'missing');
+						console.log('Transfer parameters: - Dcc.node.ts:633', transferParams);
+						console.log('Auth method: - Dcc.node.ts:634', authMethod);
+						console.log('Auth data type: - Dcc.node.ts:635', typeof authData, authData ? 'present' : 'missing');
 
 						if (authMethod === 'unsigned') {
 							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
@@ -545,8 +581,8 @@ export class Dcc implements INodeType {
 						}
 
 						// Debug: Log the created transaction
-						console.log('Created transaction: - Dcc.node.ts:548', transaction);
-						console.log('Transaction ID: - Dcc.node.ts:549', transaction?.id);
+						console.log('Created transaction: - Dcc.node.ts:646', transaction);
+						console.log('Transaction ID: - Dcc.node.ts:647', transaction?.id);
 					}
 
 					// === ISSUE TOKEN ===
@@ -706,13 +742,13 @@ export class Dcc implements INodeType {
 
 					// Handle transaction broadcasting
 					if (transaction) {
-						console.log('About to broadcast transaction: - Dcc.node.ts:709', JSON.stringify(transaction, null, 2));
+						console.log('About to broadcast transaction: - Dcc.node.ts:807', JSON.stringify(transaction, null, 2));
 						
 						if (autoBroadcast && authMethod !== 'unsigned') {
 							try {
-								console.log('Broadcasting to: - Dcc.node.ts:713', baseUrl);
+								console.log('Broadcasting to: - Dcc.node.ts:811', baseUrl);
 								const broadcastResult = await broadcast(transaction, baseUrl as string);
-								console.log('Broadcast result: - Dcc.node.ts:715', broadcastResult);
+								console.log('Broadcast result: - Dcc.node.ts:813', broadcastResult);
 								
 								returnData.push({
 									json: {
@@ -737,7 +773,7 @@ export class Dcc implements INodeType {
 									}
 								});
 							} catch (broadcastError) {
-								console.error('Broadcast error: - Dcc.node.ts:740', broadcastError);
+								console.error('Broadcast error: - Dcc.node.ts:838', broadcastError);
 								returnData.push({
 									json: {
 										transaction,
@@ -783,7 +819,7 @@ export class Dcc implements INodeType {
 							});
 						}
 					} else {
-						console.error('No transaction was created! - Dcc.node.ts:786');
+						console.error('No transaction was created! - Dcc.node.ts:884');
 						returnData.push({
 							json: {
 								error: 'Failed to create transaction',
