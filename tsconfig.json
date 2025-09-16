@@ -26,7 +26,9 @@
 		"nodes/**/*",
 		"nodes/**/*.json",
 		"jest.config.cjs",
-		"package.json"
+		"package.json",
+		"credentials/DccApi.credentials.ts",
+		"nodes/Dcc/Dcc.node.ts"
 	],
 	"exclude": ["tests/**/*"]
 }
