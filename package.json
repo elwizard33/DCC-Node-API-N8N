@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-dcc",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "n8n community nodes for interacting with DecentralChain (DCC) node REST API (accounts, tokens, transactions, utilities).",
   "keywords": [
     "n8n-community-node-package",
@@ -80,11 +80,11 @@
     "access": "public"
   },
   "dependencies": {
-  "@decentralchain/waves-transactions": "^4.2.6",
-  "@waves/waves-transactions": "^4.2.6"
+    "@decentralchain/waves-transactions": "^4.2.6",
+    "@waves/waves-transactions": "^4.2.6"
   },
   "bundledDependencies": [
-  "@decentralchain/waves-transactions",
-  "@waves/waves-transactions"
+    "@decentralchain/waves-transactions",
+    "@waves/waves-transactions"
   ]
 }
