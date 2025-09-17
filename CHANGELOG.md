@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.2.7] - 2025-09-16
+### Fixed
+- Dual fallback for library loading: try both `@decentralchain/waves-transactions` and `@waves/waves-transactions` across common n8n install paths
+- Bundled both libraries to ensure availability when installed as a community node
+- Retained runtime fallback loader and detailed diagnostics; avoids hard failure while surfacing clear debug info
+
 ## [0.2.5] - 2025-09-16
 ### Fixed
 - **Library loading**: Improved waves-transactions library loading with multiple fallback paths for n8n environments
