@@ -20,6 +20,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - **Library loading**: Improved waves-transactions library loading with multiple fallback paths for n8n environments
 - **Dependency bundling**: Added bundledDependencies to ensure @decentralchain/waves-transactions is packaged with the node
 - **Error diagnostics**: Enhanced library loading error logging with module paths and working directory info
+
+## [0.2.8] - 2025-09-16
+### Fixed
+- Sync package-lock.json to include `@waves/waves-transactions` and transitive dependencies so `npm ci` passes in CI
+- Verified build and tests; pushed new tag to trigger publish workflow
 - **Code quality**: Fixed duplicate variable declarations in library initialization
 
 ## [0.2.4] - 2025-09-16
