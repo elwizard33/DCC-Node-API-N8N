@@ -80,9 +80,11 @@
     "access": "public"
   },
   "dependencies": {
-    "@decentralchain/waves-transactions": "^4.2.6"
+  "@decentralchain/waves-transactions": "^4.2.6",
+  "@waves/waves-transactions": "^4.2.6"
   },
   "bundledDependencies": [
-    "@decentralchain/waves-transactions"
+  "@decentralchain/waves-transactions",
+  "@waves/waves-transactions"
   ]
 }

@@ -19,13 +19,20 @@ try {
 		// Try dynamic import as fallback
 		console.log('Standard require failed, attempting alternative loading methods - Dcc.node.ts:20');
 
-		// Common n8n paths to check
+		// Common n8n paths to check (both decentralchain and waves orgs)
 		const possiblePaths = [
+			// decentralchain
 			'@decentralchain/waves-transactions',
 			'./node_modules/@decentralchain/waves-transactions',
 			'../node_modules/@decentralchain/waves-transactions',
 			'../../node_modules/@decentralchain/waves-transactions',
-			'/home/node/.n8n/nodes/node_modules/n8n-nodes-dcc/node_modules/@decentralchain/waves-transactions'
+			'/home/node/.n8n/nodes/node_modules/n8n-nodes-dcc/node_modules/@decentralchain/waves-transactions',
+			// waves
+			'@waves/waves-transactions',
+			'./node_modules/@waves/waves-transactions',
+			'../node_modules/@waves/waves-transactions',
+			'../../node_modules/@waves/waves-transactions',
+			'/home/node/.n8n/nodes/node_modules/n8n-nodes-dcc/node_modules/@waves/waves-transactions'
 		];
 
 		let loadSuccess = false;
@@ -553,13 +560,17 @@ export class Dcc implements INodeType {
 						try {
 							console.log('Attempting runtime library loading - Dcc.node.ts:554');
 							
-							// Try different approaches
+							// Try different approaches for both package names
 							let runtimeSuccess = false;
 							const runtimePaths = [
+								// decentralchain
 								'@decentralchain/waves-transactions',
-								require.resolve('@decentralchain/waves-transactions'),
+								'./node_modules/@decentralchain/waves-transactions',
 								'/home/node/.n8n/nodes/node_modules/n8n-nodes-dcc/node_modules/@decentralchain/waves-transactions',
-								'./node_modules/@decentralchain/waves-transactions'
+								// waves
+								'@waves/waves-transactions',
+								'./node_modules/@waves/waves-transactions',
+								'/home/node/.n8n/nodes/node_modules/n8n-nodes-dcc/node_modules/@waves/waves-transactions'
 							];
 							
 							for (const path of runtimePaths) {
