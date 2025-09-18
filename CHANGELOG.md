@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.3.0] - 2025-09-18
+### Added
+- User-friendly Matcher forms for placing limit/market orders and cancellations (no more mandatory raw JSON)
+- Documentation updates for Matcher usage, credentials, and examples
+
+### Changed
+- Kept raw JSON as an advanced fallback for both order placement and cancellations
+- Clear separation of Dcc API vs Dcc Matcher API credentials throughout the UI and execution
+
+### Fixed
+- Minor title/label consistency and lints in matcher-related fields
+
 ## [0.2.9] - 2025-09-18
 ### Added
 - DccMatcherApi credentials with API token and Base URL so users can target their own matcher endpoint (not hardcoded)

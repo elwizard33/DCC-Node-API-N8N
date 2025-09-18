@@ -70,10 +70,17 @@ Resources supported:
 - Utility
   - Generate Address: Derive address from a supplied public key
   - Validate Address: Check if an address is valid in the network
+ - Matcher
+  - Get Order Books/Book/Status/Restrictions
+  - Asset Rates (get/upsert/delete)
+  - Place Orders (limit/market) and Cancel (by pair or all)
 
 ## Credentials
 
-The node can operate with or without credentials. Create a credential of type `DccApi` if you want to centrally manage the Base URL and/or include a bearer token for authenticated endpoints (future expansion).
+The node can operate with or without credentials.
+
+- Create a credential of type `DccApi` to centrally manage the Node Base URL and/or include a bearer token for authenticated endpoints (future expansion).
+- Create a credential of type `DccMatcherApi` to centrally manage the Matcher Base URL and API token. This is separate from the node API and is used only for the Matcher resource.
 
 Credential fields:
 
@@ -81,6 +88,13 @@ Credential fields:
 |-------|-------------|
 | Base URL | Optional override of default public node endpoint |
 | Token | Bearer token (if your node requires auth) |
+
+Matcher credential (`DccMatcherApi`) fields:
+
+| Field | Description |
+|-------|-------------|
+| Base URL | Matcher endpoint, e.g. https://mainnet-matcher.decentralchain.io |
+| Token | Bearer token used by your matcher instance (if required) |
 
 If no credential is supplied, the node uses the `Base URL` parameter on the node itself.
 
@@ -108,6 +122,26 @@ If no credential is supplied, the node uses the `Base URL` parameter on the node
 3. Execute to get derived address.
 
 ### 5. Validate Address
+### 6. Matcher: Get Order Book
+1. Resource = Matcher, Operation = Get Order Book.
+2. Fill Amount Asset and Price Asset (use `DCC` for the native asset).
+3. Optionally set Depth.
+4. Execute to get bids/asks and market info.
+
+### 7. Matcher: Place Limit Order (user-friendly form)
+1. Resource = Matcher, Operation = Place Limit Order.
+2. Provide Amount Asset, Price Asset, Order Type (buy/sell), Amount (long units), Price (long units), Fee, Fee Asset, Sender Public Key, Expiration, Version.
+3. Execute; the node builds the order JSON for you and sends it to the matcher.
+4. If you prefer to paste raw JSON, enable "Use Raw Order JSON" and supply the full order object.
+
+### 8. Matcher: Cancel Order(s)
+1. Resource = Matcher, Operation = Cancel Order (by Pair) or Cancel All Orders.
+2. By default, use the form fields: Sender Address, Order ID (optional to cancel all in pair), Timestamp (0 to auto), Signature (optional if your matcher requires it).
+3. For advanced cases, enable "Use Raw Cancel JSON" and paste the exact body expected by the matcher.
+
+Notes:
+- Matcher Base URL will be taken from the `DccMatcherApi` credential when provided; otherwise the node uses the "Matcher Base URL" field on the node.
+- Amount/Price are expected in long units (smallest units) as per matcher conventions.
 1. Resource = Utility, Operation = Validate Address.
 2. Provide the address string.
 3. Execute to get validation result.
