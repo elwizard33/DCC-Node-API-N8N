@@ -108,8 +108,16 @@ export class Dcc implements INodeType {
 		inputs: ['main'],
 		outputs: ['main'],
 		credentials: [
-			{ name: 'dccApi', required: false },
-			{ name: 'dccMatcherApi', required: false },
+			{
+				name: 'dccApi',
+				required: false,
+				displayOptions: { show: { resource: ['account', 'token', 'transaction', 'utility'] } },
+			},
+			{
+				name: 'dccMatcherApi',
+				required: false,
+				displayOptions: { show: { resource: ['matcher'] } },
+			},
 		],
 		requestDefaults: {
 			baseURL: '={{$credentials?.dccApi?.baseUrl || $parameter.baseUrl}}',
@@ -251,7 +259,20 @@ export class Dcc implements INodeType {
 				default: '',
 				description: "Amount asset ID or 'DCC'",
 				required: true,
-				displayOptions: { show: { resource: ['matcher'], operation: ['getOrderBook', 'getOrderBookStatus', 'getOrderBookRestrictions', 'cancelOneOrAllInPairOrdersWithSig'] } },
+				displayOptions: {
+					show: {
+						resource: ['matcher'],
+						operation: [
+							'getOrderBook',
+							'getOrderBookStatus',
+							'getOrderBookRestrictions',
+							'cancelOneOrAllInPairOrdersWithSig',
+							'placeLimitOrder',
+							'placeMarketOrder',
+						],
+						useRawOrderJson: [false],
+					},
+				},
 			},
 			{
 				displayName: 'Price Asset',
@@ -260,7 +281,20 @@ export class Dcc implements INodeType {
 				default: '',
 				description: "Price asset ID or 'DCC'",
 				required: true,
-				displayOptions: { show: { resource: ['matcher'], operation: ['getOrderBook', 'getOrderBookStatus', 'getOrderBookRestrictions', 'cancelOneOrAllInPairOrdersWithSig'] } },
+				displayOptions: {
+					show: {
+						resource: ['matcher'],
+						operation: [
+							'getOrderBook',
+							'getOrderBookStatus',
+							'getOrderBookRestrictions',
+							'cancelOneOrAllInPairOrdersWithSig',
+							'placeLimitOrder',
+							'placeMarketOrder',
+						],
+						useRawOrderJson: [false],
+					},
+				},
 			},
 			{
 				displayName: 'Depth',
@@ -294,14 +328,103 @@ export class Dcc implements INodeType {
 
 			// Matcher: raw JSON bodies for place/cancel
 			{
+				displayName: 'Use Raw Order JSON',
+				name: 'useRawOrderJson',
+				type: 'boolean',
+				default: false,
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'] } },
+				description: 'Whether to provide a raw JSON order body instead of using fields',
+			},
+			{
 				displayName: 'Order JSON',
 				name: 'orderJson',
 				type: 'string',
 				default: '',
 				required: true,
 				placeholder: '{"senderPublicKey":"...","orderType":"buy","assetPair":{...},"amount":1,...}',
-				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'] } },
-				description: 'Raw signed order JSON as required by matcher',
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [true] } },
+				description: 'Raw order JSON as required by matcher',
+			},
+			{
+				displayName: 'Order Type',
+				name: 'matcherOrderType',
+				type: 'options',
+				options: [
+					{ name: 'Buy', value: 'buy' },
+					{ name: 'Sell', value: 'sell' },
+				],
+				default: 'buy',
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [false] } },
+				description: 'Type of order to place',
+			},
+			{
+				displayName: 'Amount (Long Units)',
+				name: 'matcherAmount',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [false] } },
+				description: 'Amount in smallest units of the amount asset',
+			},
+			{
+				displayName: 'Price (Long Units)',
+				name: 'matcherPrice',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder'], useRawOrderJson: [false] } },
+				description: 'Price in matcher long units (see matcher docs)',
+			},
+			{
+				displayName: 'Matcher Fee (Long Units)',
+				name: 'matcherFee',
+				type: 'string',
+				default: '300000',
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [false] } },
+				description: 'Fee amount in smallest units of the fee asset (default 0.003 DCC)',
+			},
+			{
+				displayName: 'Fee Asset ID',
+				name: 'matcherFeeAssetId',
+				type: 'string',
+				default: 'DCC',
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [false] } },
+				description: "Fee asset ID or 'DCC'",
+			},
+			{
+				displayName: 'Sender Public Key',
+				name: 'matcherSenderPublicKey',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [false] } },
+				description: 'Public key of the order sender',
+			},
+			{
+				displayName: 'Expiration (Hours)',
+				name: 'matcherExpirationHours',
+				type: 'number',
+				default: 24,
+				typeOptions: { minValue: 1, maxValue: 720 },
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [false] } },
+				description: 'How long the order remains valid',
+			},
+			{
+				displayName: 'Order Version',
+				name: 'matcherOrderVersion',
+				type: 'number',
+				default: 3,
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'], useRawOrderJson: [false] } },
+				description: 'Order version (e.g., 3)',
+			},
+
+			{
+				displayName: 'Use Raw Cancel JSON',
+				name: 'useRawCancelJson',
+				type: 'boolean',
+				default: false,
+				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig', 'cancelAllOrdersWithSig'] } },
+				description: 'Whether to provide a raw JSON cancel body instead of using fields',
 			},
 			{
 				displayName: 'Cancel JSON',
@@ -310,8 +433,41 @@ export class Dcc implements INodeType {
 				default: '',
 				required: true,
 				placeholder: '{"sender":"<address>","orderID":"<ID>","timestamp":...,"signature":"..."}',
-				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig', 'cancelAllOrdersWithSig'] } },
+				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig', 'cancelAllOrdersWithSig'], useRawCancelJson: [true] } },
 				description: 'Raw cancel JSON (signed) as required by matcher',
+			},
+			{
+				displayName: 'Sender Address',
+				name: 'cancelSender',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig', 'cancelAllOrdersWithSig'], useRawCancelJson: [false] } },
+				description: 'Address of the order owner',
+			},
+			{
+				displayName: 'Order ID',
+				name: 'cancelOrderId',
+				type: 'string',
+				default: '',
+				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig'], useRawCancelJson: [false] } },
+				description: 'Specific order ID to cancel (leave empty to cancel all orders in the pair)',
+			},
+			{
+				displayName: 'Timestamp (MS)',
+				name: 'cancelTimestamp',
+				type: 'number',
+				default: 0,
+				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig', 'cancelAllOrdersWithSig'], useRawCancelJson: [false] } },
+				description: 'Optional timestamp in milliseconds (0 to auto-generate)',
+			},
+			{
+				displayName: 'Signature',
+				name: 'cancelSignature',
+				type: 'string',
+				default: '',
+				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig', 'cancelAllOrdersWithSig'], useRawCancelJson: [false] } },
+				description: 'Optional signature; provide if your matcher requires signature-based cancellation',
 			},
 
 			// Common fields - Seed/Private Key for transaction signing
@@ -676,7 +832,7 @@ export class Dcc implements INodeType {
 					if (!isLibraryLoaded) {
 						// Try one more time to load the library dynamically
 						try {
-							console.log('Attempting runtime library loading - Dcc.node.ts:679');
+							console.log('Attempting runtime library loading - Dcc.node.ts:835');
 
 							// Try different approaches for both package names
 							let runtimeSuccess = false;
@@ -698,11 +854,11 @@ export class Dcc implements INodeType {
 										wavesTransactions = runtimeLib;
 										isLibraryLoaded = true;
 										runtimeSuccess = true;
-										console.log(`Runtime loading successful from: ${path} - Dcc.node.ts:701`);
+										console.log(`Runtime loading successful from: ${path} - Dcc.node.ts:857`);
 										break;
 									}
 								} catch (e) {
-									console.log(`Runtime loading failed for: ${path} - Dcc.node.ts:705`);
+									console.log(`Runtime loading failed for: ${path} - Dcc.node.ts:861`);
 								}
 							}
 
@@ -711,10 +867,10 @@ export class Dcc implements INodeType {
 							}
 						} catch (runtimeError) {
 							// If we still can't load it, provide detailed debug info but don't fail
-							console.error('All library loading attempts failed - Dcc.node.ts:714');
-							console.error('Working directory: - Dcc.node.ts:715', process.cwd());
-							console.error('Node modules path: - Dcc.node.ts:716', process.env.NODE_PATH);
-							console.error('Available require paths: - Dcc.node.ts:717', require.resolve.paths(''));
+							console.error('All library loading attempts failed - Dcc.node.ts:870');
+							console.error('Working directory: - Dcc.node.ts:871', process.cwd());
+							console.error('Node modules path: - Dcc.node.ts:872', process.env.NODE_PATH);
+							console.error('Available require paths: - Dcc.node.ts:873', require.resolve.paths(''));
 
 							// Create a detailed error response instead of throwing
 							returnData.push({
@@ -733,7 +889,7 @@ export class Dcc implements INodeType {
 							});
 
 							// Continue with mocks instead of failing
-							console.log('Continuing with mock functions - Dcc.node.ts:736');
+							console.log('Continuing with mock functions - Dcc.node.ts:892');
 						}
 					}
 
@@ -770,9 +926,9 @@ export class Dcc implements INodeType {
 						};
 
 						// Debug: Log the parameters before creating transaction
-						console.log('Transfer parameters: - Dcc.node.ts:773', transferParams);
-						console.log('Auth method: - Dcc.node.ts:774', authMethod);
-						console.log('Auth data type: - Dcc.node.ts:775', typeof authData, authData ? 'present' : 'missing');
+						console.log('Transfer parameters: - Dcc.node.ts:929', transferParams);
+						console.log('Auth method: - Dcc.node.ts:930', authMethod);
+						console.log('Auth data type: - Dcc.node.ts:931', typeof authData, authData ? 'present' : 'missing');
 
 						if (authMethod === 'unsigned') {
 							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
@@ -783,8 +939,8 @@ export class Dcc implements INodeType {
 						}
 
 						// Debug: Log the created transaction
-						console.log('Created transaction: - Dcc.node.ts:786', transaction);
-						console.log('Transaction ID: - Dcc.node.ts:787', transaction?.id);
+						console.log('Created transaction: - Dcc.node.ts:942', transaction);
+						console.log('Transaction ID: - Dcc.node.ts:943', transaction?.id);
 					}
 
 					// === ISSUE TOKEN ===
@@ -944,13 +1100,13 @@ export class Dcc implements INodeType {
 
 					// Handle transaction broadcasting
 					if (transaction) {
-						console.log('About to broadcast transaction: - Dcc.node.ts:947', JSON.stringify(transaction, null, 2));
+						console.log('About to broadcast transaction: - Dcc.node.ts:1103', JSON.stringify(transaction, null, 2));
 
 						if (autoBroadcast && authMethod !== 'unsigned') {
 							try {
-								console.log('Broadcasting to: - Dcc.node.ts:951', baseUrl);
+								console.log('Broadcasting to: - Dcc.node.ts:1107', baseUrl);
 								const broadcastResult = await broadcast(transaction, baseUrl as string);
-								console.log('Broadcast result: - Dcc.node.ts:953', broadcastResult);
+								console.log('Broadcast result: - Dcc.node.ts:1109', broadcastResult);
 
 								returnData.push({
 									json: {
@@ -975,7 +1131,7 @@ export class Dcc implements INodeType {
 									}
 								});
 							} catch (broadcastError) {
-								console.error('Broadcast error: - Dcc.node.ts:978', broadcastError);
+								console.error('Broadcast error: - Dcc.node.ts:1134', broadcastError);
 								returnData.push({
 									json: {
 										transaction,
@@ -1021,7 +1177,7 @@ export class Dcc implements INodeType {
 							});
 						}
 					} else {
-						console.error('No transaction was created! - Dcc.node.ts:1024');
+						console.error('No transaction was created! - Dcc.node.ts:1180');
 						returnData.push({
 							json: {
 								error: 'Failed to create transaction',
@@ -1219,39 +1375,120 @@ export class Dcc implements INodeType {
 					}
 
 					else if (op === 'placeLimitOrder') {
-						const orderJson = this.getNodeParameter('orderJson', i) as string;
+						const useRaw = this.getNodeParameter('useRawOrderJson', i, false) as boolean;
 						let body: any;
-						try { body = JSON.parse(orderJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Order JSON' }); }
+						if (useRaw) {
+							const orderJson = this.getNodeParameter('orderJson', i) as string;
+							try { body = JSON.parse(orderJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Order JSON' }); }
+						} else {
+							const amountAsset = this.getNodeParameter('amountAsset', i) as string;
+							const priceAsset = this.getNodeParameter('priceAsset', i) as string;
+							const orderType = this.getNodeParameter('matcherOrderType', i) as string;
+							const amount = this.getNodeParameter('matcherAmount', i) as string;
+							const price = this.getNodeParameter('matcherPrice', i) as string;
+							const matcherFee = this.getNodeParameter('matcherFee', i, '300000') as string;
+							const matcherFeeAssetId = this.getNodeParameter('matcherFeeAssetId', i, 'DCC') as string;
+							const senderPublicKey = this.getNodeParameter('matcherSenderPublicKey', i) as string;
+							const expirationHours = this.getNodeParameter('matcherExpirationHours', i, 24) as number;
+							const version = this.getNodeParameter('matcherOrderVersion', i, 3) as number;
+							const now = Date.now();
+							body = {
+								senderPublicKey,
+								orderType,
+								assetPair: { amountAsset, priceAsset },
+								amount: amount,
+								price: price,
+								matcherFee,
+								matcherFeeAssetId: matcherFeeAssetId || 'DCC',
+								timestamp: now,
+								expiration: now + Math.max(1, expirationHours) * 60 * 60 * 1000,
+								version,
+							};
+						}
 						const endpoint = `/matcher/orderbook`;
 						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
-						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString(), requestBody: body } } });
 					}
 
 					else if (op === 'placeMarketOrder') {
-						const orderJson = this.getNodeParameter('orderJson', i) as string;
+						const useRaw = this.getNodeParameter('useRawOrderJson', i, false) as boolean;
 						let body: any;
-						try { body = JSON.parse(orderJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Order JSON' }); }
+						if (useRaw) {
+							const orderJson = this.getNodeParameter('orderJson', i) as string;
+							try { body = JSON.parse(orderJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Order JSON' }); }
+						} else {
+							const amountAsset = this.getNodeParameter('amountAsset', i) as string;
+							const priceAsset = this.getNodeParameter('priceAsset', i) as string;
+							const orderType = this.getNodeParameter('matcherOrderType', i) as string;
+							const amount = this.getNodeParameter('matcherAmount', i) as string;
+							const matcherFee = this.getNodeParameter('matcherFee', i, '300000') as string;
+							const matcherFeeAssetId = this.getNodeParameter('matcherFeeAssetId', i, 'DCC') as string;
+							const senderPublicKey = this.getNodeParameter('matcherSenderPublicKey', i) as string;
+							const expirationHours = this.getNodeParameter('matcherExpirationHours', i, 24) as number;
+							const version = this.getNodeParameter('matcherOrderVersion', i, 3) as number;
+							const now = Date.now();
+							// Market orders typically omit price; matcher sets execution price from order book
+							body = {
+								senderPublicKey,
+								orderType,
+								assetPair: { amountAsset, priceAsset },
+								amount: amount,
+								matcherFee,
+								matcherFeeAssetId: matcherFeeAssetId || 'DCC',
+								timestamp: now,
+								expiration: now + Math.max(1, expirationHours) * 60 * 60 * 1000,
+								version,
+							};
+						}
 						const endpoint = `/matcher/orderbook/market`;
 						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
-						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString(), requestBody: body } } });
 					}
 
 					else if (op === 'cancelOneOrAllInPairOrdersWithSig') {
 						const amountAsset = this.getNodeParameter('amountAsset', i) as string;
 						const priceAsset = this.getNodeParameter('priceAsset', i) as string;
-						const cancelJson = this.getNodeParameter('cancelJson', i) as string;
-						let body: any; try { body = JSON.parse(cancelJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Cancel JSON' }); }
+						const useRaw = this.getNodeParameter('useRawCancelJson', i, false) as boolean;
+						let body: any;
+						if (useRaw) {
+							const cancelJson = this.getNodeParameter('cancelJson', i) as string;
+							try { body = JSON.parse(cancelJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Cancel JSON' }); }
+						} else {
+							const sender = this.getNodeParameter('cancelSender', i) as string;
+							const orderId = this.getNodeParameter('cancelOrderId', i, '') as string;
+							const ts = this.getNodeParameter('cancelTimestamp', i, 0) as number;
+							const signature = this.getNodeParameter('cancelSignature', i, '') as string;
+							body = {
+								sender,
+								...(orderId ? { orderId } : {}),
+								timestamp: ts && ts > 0 ? ts : Date.now(),
+								...(signature ? { signature } : {}),
+							};
+						}
 						const endpoint = `/matcher/orderbook/${encodeURIComponent(amountAsset)}/${encodeURIComponent(priceAsset)}/cancel`;
 						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
-						returnData.push({ json: { ...response, debug: { operation: op, endpoint, amountAsset, priceAsset, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, amountAsset, priceAsset, matcherBaseUrl, timestamp: new Date().toISOString(), requestBody: body } } });
 					}
 
 					else if (op === 'cancelAllOrdersWithSig') {
-						const cancelJson = this.getNodeParameter('cancelJson', i) as string;
-						let body: any; try { body = JSON.parse(cancelJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Cancel JSON' }); }
+						const useRaw = this.getNodeParameter('useRawCancelJson', i, false) as boolean;
+						let body: any;
+						if (useRaw) {
+							const cancelJson = this.getNodeParameter('cancelJson', i) as string;
+							try { body = JSON.parse(cancelJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Cancel JSON' }); }
+						} else {
+							const sender = this.getNodeParameter('cancelSender', i) as string;
+							const ts = this.getNodeParameter('cancelTimestamp', i, 0) as number;
+							const signature = this.getNodeParameter('cancelSignature', i, '') as string;
+							body = {
+								sender,
+								timestamp: ts && ts > 0 ? ts : Date.now(),
+								...(signature ? { signature } : {}),
+							};
+						}
 						const endpoint = `/matcher/orderbook/cancel`;
 						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
-						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString(), requestBody: body } } });
 					}
 				}
 
