@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-dcc",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "n8n community nodes for interacting with DecentralChain (DCC) node REST API (accounts, tokens, transactions, utilities).",
   "keywords": [
     "n8n-community-node-package",
@@ -52,7 +52,8 @@
     "credentials": [
       "dist/credentials/ExampleCredentialsApi.credentials.js",
       "dist/credentials/HttpBinApi.credentials.js",
-      "dist/credentials/DccApi.credentials.js"
+      "dist/credentials/DccApi.credentials.js",
+      "dist/credentials/DccMatcherApi.credentials.js"
     ],
     "nodes": [
       "dist/nodes/ExampleNode/ExampleNode.node.js",

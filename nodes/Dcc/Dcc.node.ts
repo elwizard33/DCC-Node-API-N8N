@@ -39,11 +39,11 @@ try {
 		for (const modulePath of possiblePaths) {
 			try {
 				wavesTransactions = require(modulePath);
-				console.log(`Successfully loaded from: ${modulePath} - Dcc.node.ts:35`);
+				console.log(`Successfully loaded from: ${modulePath} - Dcc.node.ts:42`);
 				loadSuccess = true;
 				break;
 			} catch (pathError) {
-				console.log(`Failed to load from: ${modulePath} - Dcc.node.ts:39`);
+				console.log(`Failed to load from: ${modulePath} - Dcc.node.ts:46`);
 			}
 		}
 
@@ -53,11 +53,11 @@ try {
 	}
 
 	isLibraryLoaded = true;
-	console.log('wavestransactions library loaded successfully - Dcc.node.ts:49');
+	console.log('wavestransactions library loaded successfully - Dcc.node.ts:56');
 } catch (error) {
-	console.error('wavestransactions library loading failed with error: - Dcc.node.ts:51', error.message, '');
-	console.error('Current working directory: - Dcc.node.ts:52', process.cwd(), '');
-	console.error('Module paths: - Dcc.node.ts:53', JSON.stringify(require.resolve.paths('@decentralchain/waves-transactions'), null, 2), '');
+	console.error('wavestransactions library loading failed with error: - Dcc.node.ts:58', error.message, '');
+	console.error('Current working directory: - Dcc.node.ts:59', process.cwd(), '');
+	console.error('Module paths: - Dcc.node.ts:60', JSON.stringify(require.resolve.paths('@decentralchain/waves-transactions'), null, 2), '');
 
 	// Fallback for tests or when library is not available
 	wavesTransactions = {
@@ -109,6 +109,7 @@ export class Dcc implements INodeType {
 		outputs: ['main'],
 		credentials: [
 			{ name: 'dccApi', required: false },
+			{ name: 'dccMatcherApi', required: false },
 		],
 		requestDefaults: {
 			baseURL: '={{$credentials?.dccApi?.baseUrl || $parameter.baseUrl}}',
@@ -131,6 +132,7 @@ export class Dcc implements INodeType {
 				noDataExpression: true,
 				options: [
 					{ name: 'Account', value: 'account' },
+					{ name: 'Matcher', value: 'matcher' },
 					{ name: 'Token/Asset', value: 'token' },
 					{ name: 'Transaction', value: 'transaction' },
 					{ name: 'Utility', value: 'utility' },
@@ -205,6 +207,111 @@ export class Dcc implements INodeType {
 					{ name: 'Validate Address', value: 'validateAddress', action: 'Validate address format' },
 				],
 				default: 'generateAddress',
+			},
+
+			// Matcher Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: { show: { resource: ['matcher'] } },
+				options: [
+					{ name: 'Cancel All Orders', value: 'cancelAllOrdersWithSig', action: 'Cancel all active orders' },
+					{ name: 'Cancel Order (by Pair)', value: 'cancelOneOrAllInPairOrdersWithSig', action: 'Cancel order or all in pair' },
+					{ name: 'Delete Asset Rate', value: 'deleteAssetRate', action: 'Delete an asset rate' },
+					{ name: 'Get Asset Rates', value: 'getAssetRates', action: 'Get current asset rates' },
+					{ name: 'Get Order Book', value: 'getOrderBook', action: 'Get order book for pair' },
+					{ name: 'Get Order Book Restrictions', value: 'getOrderBookRestrictions', action: 'Get order restrictions for pair' },
+					{ name: 'Get Order Book Status', value: 'getOrderBookStatus', action: 'Get market status' },
+					{ name: 'Get Order Books', value: 'getOrderBooks', action: 'Get open trading markets' },
+					{ name: 'Place Limit Order', value: 'placeLimitOrder', action: 'Place new limit order' },
+					{ name: 'Place Market Order', value: 'placeMarketOrder', action: 'Place new market order' },
+					{ name: 'Upsert Asset Rate', value: 'upsertAssetRate', action: 'Add or update an asset rate' },
+				],
+				default: 'getOrderBooks',
+			},
+
+			// Matcher base URL (fallback if credential not provided)
+			{
+				displayName: 'Matcher Base URL',
+				name: 'matcherBaseUrl',
+				type: 'string',
+				default: 'https://mainnet-matcher.decentralchain.io',
+				description: 'Base URL for the Matcher API (used if matcher credential not supplied)',
+				required: true,
+				displayOptions: { show: { resource: ['matcher'] } },
+			},
+
+			// Matcher: common pair inputs
+			{
+				displayName: 'Amount Asset',
+				name: 'amountAsset',
+				type: 'string',
+				default: '',
+				description: "Amount asset ID or 'DCC'",
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['getOrderBook', 'getOrderBookStatus', 'getOrderBookRestrictions', 'cancelOneOrAllInPairOrdersWithSig'] } },
+			},
+			{
+				displayName: 'Price Asset',
+				name: 'priceAsset',
+				type: 'string',
+				default: '',
+				description: "Price asset ID or 'DCC'",
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['getOrderBook', 'getOrderBookStatus', 'getOrderBookRestrictions', 'cancelOneOrAllInPairOrdersWithSig'] } },
+			},
+			{
+				displayName: 'Depth',
+				name: 'depth',
+				type: 'number',
+				default: 0,
+				description: 'Optional limit for number of bid/ask records (0 for full orderbook)',
+				displayOptions: { show: { resource: ['matcher'], operation: ['getOrderBook'] } },
+				typeOptions: { minValue: 0 },
+			},
+
+			// Matcher: rates inputs
+			{
+				displayName: 'Asset ID',
+				name: 'rateAssetId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['upsertAssetRate', 'deleteAssetRate'] } },
+				description: 'Asset ID for which to upsert/delete rate',
+			},
+			{
+				displayName: 'Rate',
+				name: 'rate',
+				type: 'number',
+				default: 1,
+				required: true,
+				displayOptions: { show: { resource: ['matcher'], operation: ['upsertAssetRate'] } },
+				description: 'Rate (price of 1 DCC in the specified asset)',
+			},
+
+			// Matcher: raw JSON bodies for place/cancel
+			{
+				displayName: 'Order JSON',
+				name: 'orderJson',
+				type: 'string',
+				default: '',
+				required: true,
+				placeholder: '{"senderPublicKey":"...","orderType":"buy","assetPair":{...},"amount":1,...}',
+				displayOptions: { show: { resource: ['matcher'], operation: ['placeLimitOrder', 'placeMarketOrder'] } },
+				description: 'Raw signed order JSON as required by matcher',
+			},
+			{
+				displayName: 'Cancel JSON',
+				name: 'cancelJson',
+				type: 'string',
+				default: '',
+				required: true,
+				placeholder: '{"sender":"<address>","orderID":"<ID>","timestamp":...,"signature":"..."}',
+				displayOptions: { show: { resource: ['matcher'], operation: ['cancelOneOrAllInPairOrdersWithSig', 'cancelAllOrdersWithSig'] } },
+				description: 'Raw cancel JSON (signed) as required by matcher',
 			},
 
 			// Common fields - Seed/Private Key for transaction signing
@@ -551,6 +658,17 @@ export class Dcc implements INodeType {
 			const credentials = await this.getCredentials('dccApi');
 			const baseUrl = credentials?.baseUrl || this.getNodeParameter('baseUrl', i) as string;
 
+			// Matcher credentials (optional)
+			let matcherBaseUrl = this.getNodeParameter('matcherBaseUrl', i, 'https://mainnet-matcher.decentralchain.io') as string;
+			let matcherAuthHeader: string | undefined;
+			try {
+				const matcherCreds = await this.getCredentials('dccMatcherApi');
+				const credBaseUrl = (matcherCreds?.baseUrl as unknown as string) || undefined;
+				matcherBaseUrl = credBaseUrl || matcherBaseUrl;
+				const credToken = matcherCreds?.token as unknown as string | undefined;
+				matcherAuthHeader = credToken ? `Bearer ${credToken}` : undefined;
+			} catch {}
+
 			try {
 				// === TRANSACTION OPERATIONS ===
 				if (resource === 'transaction') {
@@ -558,8 +676,8 @@ export class Dcc implements INodeType {
 					if (!isLibraryLoaded) {
 						// Try one more time to load the library dynamically
 						try {
-							console.log('Attempting runtime library loading - Dcc.node.ts:554');
-							
+							console.log('Attempting runtime library loading - Dcc.node.ts:679');
+
 							// Try different approaches for both package names
 							let runtimeSuccess = false;
 							const runtimePaths = [
@@ -572,7 +690,7 @@ export class Dcc implements INodeType {
 								'./node_modules/@waves/waves-transactions',
 								'/home/node/.n8n/nodes/node_modules/n8n-nodes-dcc/node_modules/@waves/waves-transactions'
 							];
-							
+
 							for (const path of runtimePaths) {
 								try {
 									const runtimeLib = require(path);
@@ -580,24 +698,24 @@ export class Dcc implements INodeType {
 										wavesTransactions = runtimeLib;
 										isLibraryLoaded = true;
 										runtimeSuccess = true;
-										console.log(`Runtime loading successful from: ${path} - Dcc.node.ts:572`);
+										console.log(`Runtime loading successful from: ${path} - Dcc.node.ts:701`);
 										break;
 									}
 								} catch (e) {
-									console.log(`Runtime loading failed for: ${path} - Dcc.node.ts:576`);
+									console.log(`Runtime loading failed for: ${path} - Dcc.node.ts:705`);
 								}
 							}
-							
+
 							if (!runtimeSuccess) {
 								throw new NodeApiError(this.getNode(), { message: 'Runtime loading failed' });
 							}
 						} catch (runtimeError) {
 							// If we still can't load it, provide detailed debug info but don't fail
-							console.error('All library loading attempts failed - Dcc.node.ts:585');
-							console.error('Working directory: - Dcc.node.ts:586', process.cwd());
-							console.error('Node modules path: - Dcc.node.ts:587', process.env.NODE_PATH);
-							console.error('Available require paths: - Dcc.node.ts:588', require.resolve.paths(''));
-							
+							console.error('All library loading attempts failed - Dcc.node.ts:714');
+							console.error('Working directory: - Dcc.node.ts:715', process.cwd());
+							console.error('Node modules path: - Dcc.node.ts:716', process.env.NODE_PATH);
+							console.error('Available require paths: - Dcc.node.ts:717', require.resolve.paths(''));
+
 							// Create a detailed error response instead of throwing
 							returnData.push({
 								json: {
@@ -613,9 +731,9 @@ export class Dcc implements INodeType {
 									}
 								}
 							});
-							
+
 							// Continue with mocks instead of failing
-							console.log('Continuing with mock functions - Dcc.node.ts:607');
+							console.log('Continuing with mock functions - Dcc.node.ts:736');
 						}
 					}
 
@@ -652,9 +770,9 @@ export class Dcc implements INodeType {
 						};
 
 						// Debug: Log the parameters before creating transaction
-						console.log('Transfer parameters: - Dcc.node.ts:644', transferParams);
-						console.log('Auth method: - Dcc.node.ts:645', authMethod);
-						console.log('Auth data type: - Dcc.node.ts:646', typeof authData, authData ? 'present' : 'missing');
+						console.log('Transfer parameters: - Dcc.node.ts:773', transferParams);
+						console.log('Auth method: - Dcc.node.ts:774', authMethod);
+						console.log('Auth data type: - Dcc.node.ts:775', typeof authData, authData ? 'present' : 'missing');
 
 						if (authMethod === 'unsigned') {
 							const senderPublicKey = this.getNodeParameter('senderPublicKey', i) as string;
@@ -665,8 +783,8 @@ export class Dcc implements INodeType {
 						}
 
 						// Debug: Log the created transaction
-						console.log('Created transaction: - Dcc.node.ts:657', transaction);
-						console.log('Transaction ID: - Dcc.node.ts:658', transaction?.id);
+						console.log('Created transaction: - Dcc.node.ts:786', transaction);
+						console.log('Transaction ID: - Dcc.node.ts:787', transaction?.id);
 					}
 
 					// === ISSUE TOKEN ===
@@ -826,13 +944,13 @@ export class Dcc implements INodeType {
 
 					// Handle transaction broadcasting
 					if (transaction) {
-						console.log('About to broadcast transaction: - Dcc.node.ts:818', JSON.stringify(transaction, null, 2));
+						console.log('About to broadcast transaction: - Dcc.node.ts:947', JSON.stringify(transaction, null, 2));
 
 						if (autoBroadcast && authMethod !== 'unsigned') {
 							try {
-								console.log('Broadcasting to: - Dcc.node.ts:822', baseUrl);
+								console.log('Broadcasting to: - Dcc.node.ts:951', baseUrl);
 								const broadcastResult = await broadcast(transaction, baseUrl as string);
-								console.log('Broadcast result: - Dcc.node.ts:824', broadcastResult);
+								console.log('Broadcast result: - Dcc.node.ts:953', broadcastResult);
 
 								returnData.push({
 									json: {
@@ -857,7 +975,7 @@ export class Dcc implements INodeType {
 									}
 								});
 							} catch (broadcastError) {
-								console.error('Broadcast error: - Dcc.node.ts:849', broadcastError);
+								console.error('Broadcast error: - Dcc.node.ts:978', broadcastError);
 								returnData.push({
 									json: {
 										transaction,
@@ -903,7 +1021,7 @@ export class Dcc implements INodeType {
 							});
 						}
 					} else {
-						console.error('No transaction was created! - Dcc.node.ts:895');
+						console.error('No transaction was created! - Dcc.node.ts:1024');
 						returnData.push({
 							json: {
 								error: 'Failed to create transaction',
@@ -1038,6 +1156,102 @@ export class Dcc implements INodeType {
 							json: true,
 						});
 						returnData.push({ json: response });
+					}
+				}
+
+				// === MATCHER OPERATIONS ===
+				else if (resource === 'matcher') {
+					const op = operation;
+					const headers: Record<string, string> = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+					if (matcherAuthHeader) headers['Authorization'] = matcherAuthHeader;
+
+					if (op === 'getAssetRates') {
+						const endpoint = `/matcher/settings/rates`;
+						const response = await this.helpers.httpRequest({ method: 'GET', url: `${matcherBaseUrl}${endpoint}`, headers, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'upsertAssetRate') {
+						const assetId = this.getNodeParameter('rateAssetId', i) as string;
+						const rate = this.getNodeParameter('rate', i) as number;
+						const endpoint = `/matcher/settings/rates/${assetId}`;
+						const response = await this.helpers.httpRequest({ method: 'PUT', url: `${matcherBaseUrl}${endpoint}`, headers, body: rate, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, assetId, rate, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'deleteAssetRate') {
+						const assetId = this.getNodeParameter('rateAssetId', i) as string;
+						const endpoint = `/matcher/settings/rates/${assetId}`;
+						const response = await this.helpers.httpRequest({ method: 'DELETE', url: `${matcherBaseUrl}${endpoint}`, headers, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, assetId, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'getOrderBook') {
+						const amountAsset = this.getNodeParameter('amountAsset', i) as string;
+						const priceAsset = this.getNodeParameter('priceAsset', i) as string;
+						const depth = this.getNodeParameter('depth', i, 0) as number;
+						const qs = depth && depth > 0 ? `?depth=${depth}` : '';
+						const endpoint = `/matcher/orderbook/${encodeURIComponent(amountAsset)}/${encodeURIComponent(priceAsset)}${qs}`;
+						const response = await this.helpers.httpRequest({ method: 'GET', url: `${matcherBaseUrl}${endpoint}`, headers, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, amountAsset, priceAsset, depth, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'getOrderBookStatus') {
+						const amountAsset = this.getNodeParameter('amountAsset', i) as string;
+						const priceAsset = this.getNodeParameter('priceAsset', i) as string;
+						const endpoint = `/matcher/orderbook/${encodeURIComponent(amountAsset)}/${encodeURIComponent(priceAsset)}/status`;
+						const response = await this.helpers.httpRequest({ method: 'GET', url: `${matcherBaseUrl}${endpoint}`, headers, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, amountAsset, priceAsset, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'getOrderBookRestrictions') {
+						const amountAsset = this.getNodeParameter('amountAsset', i) as string;
+						const priceAsset = this.getNodeParameter('priceAsset', i) as string;
+						const endpoint = `/matcher/orderbook/${encodeURIComponent(amountAsset)}/${encodeURIComponent(priceAsset)}/info`;
+						const response = await this.helpers.httpRequest({ method: 'GET', url: `${matcherBaseUrl}${endpoint}`, headers, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, amountAsset, priceAsset, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'getOrderBooks') {
+						const endpoint = `/matcher/orderbook`;
+						const response = await this.helpers.httpRequest({ method: 'GET', url: `${matcherBaseUrl}${endpoint}`, headers, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'placeLimitOrder') {
+						const orderJson = this.getNodeParameter('orderJson', i) as string;
+						let body: any;
+						try { body = JSON.parse(orderJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Order JSON' }); }
+						const endpoint = `/matcher/orderbook`;
+						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'placeMarketOrder') {
+						const orderJson = this.getNodeParameter('orderJson', i) as string;
+						let body: any;
+						try { body = JSON.parse(orderJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Order JSON' }); }
+						const endpoint = `/matcher/orderbook/market`;
+						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'cancelOneOrAllInPairOrdersWithSig') {
+						const amountAsset = this.getNodeParameter('amountAsset', i) as string;
+						const priceAsset = this.getNodeParameter('priceAsset', i) as string;
+						const cancelJson = this.getNodeParameter('cancelJson', i) as string;
+						let body: any; try { body = JSON.parse(cancelJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Cancel JSON' }); }
+						const endpoint = `/matcher/orderbook/${encodeURIComponent(amountAsset)}/${encodeURIComponent(priceAsset)}/cancel`;
+						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, amountAsset, priceAsset, matcherBaseUrl, timestamp: new Date().toISOString() } } });
+					}
+
+					else if (op === 'cancelAllOrdersWithSig') {
+						const cancelJson = this.getNodeParameter('cancelJson', i) as string;
+						let body: any; try { body = JSON.parse(cancelJson); } catch { throw new NodeApiError(this.getNode(), { message: 'Invalid JSON in Cancel JSON' }); }
+						const endpoint = `/matcher/orderbook/cancel`;
+						const response = await this.helpers.httpRequest({ method: 'POST', url: `${matcherBaseUrl}${endpoint}`, headers, body, json: true });
+						returnData.push({ json: { ...response, debug: { operation: op, endpoint, matcherBaseUrl, timestamp: new Date().toISOString() } } });
 					}
 				}
 

@@ -11,10 +11,10 @@ describe('Dcc node description', () => {
     const resourceProperty = desc.properties.find((p: any) => p.name === 'resource');
     expect(resourceProperty).toBeDefined();
     const resourceValues = resourceProperty.options.map((o: any) => o.value).sort();
-    expect(resourceValues).toEqual(['account','token','transaction','utility'].sort());
+  expect(resourceValues).toEqual(['account','matcher','token','transaction','utility'].sort());
     // Ensure at least one operation for each resource
     const getOps = (resource: string) => desc.properties.filter((p: any) => p.name === 'operation' && p.displayOptions?.show?.resource?.includes(resource));
-    ['account','token','transaction','utility'].forEach(r => {
+    ['account','matcher','token','transaction','utility'].forEach(r => {
       const ops = getOps(r);
       expect(ops.length).toBeGreaterThan(0);
     });

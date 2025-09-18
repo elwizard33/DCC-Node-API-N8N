@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.2.9] - 2025-09-18
+### Added
+- DccMatcherApi credentials with API token and Base URL so users can target their own matcher endpoint (not hardcoded)
+- New "Matcher" resource with operations: asset rates, order books, order placement, and cancellations
+
+### Changed
+- Node UI and logic accept a configurable matcher base URL (via credentials or a field fallback)
+
 ## [0.2.7] - 2025-09-16
 ### Fixed
 - Dual fallback for library loading: try both `@decentralchain/waves-transactions` and `@waves/waves-transactions` across common n8n install paths
