@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.3.1] - 2025-09-18
+### Fixed
+- Show DccApi credentials only for node (account/token/transaction/utility) resources; show DccMatcherApi only for matcher actions
+- Display Amount/Price Asset fields for order placement when not using raw JSON so users can submit via fields
+
 ## [0.3.0] - 2025-09-18
 ### Added
 - User-friendly Matcher forms for placing limit/market orders and cancellations (no more mandatory raw JSON)
