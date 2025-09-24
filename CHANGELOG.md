@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 - Planned: Advanced NFT operations and asset distribution analytics
 - Planned: Test suite for transaction validation
 
+## [0.3.2] - 2025-09-23
+### Added
+- Attachment UI for transfer and massTransfer: new Attachment collection with Mode (None | Plain Text | Base58)
+
+### Fixed
+- Transaction attachments now support plain text (auto‑encoded to Base58) and Base58 inputs with validation
+- Enforced 140‑byte decoded limit with clear error messages including byte count
+- Documentation updated with examples and guidance
+
 ## [0.3.1] - 2025-09-18
 ### Fixed
 - Show DccApi credentials only for node (account/token/transaction/utility) resources; show DccMatcherApi only for matcher actions

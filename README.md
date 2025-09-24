@@ -116,6 +116,14 @@ If no credential is supplied, the node uses the `Base URL` parameter on the node
 2. Paste the signed transaction JSON into the Signed Transaction JSON field.
 3. Execute; response includes success status or validation errors.
 
+### 3b. Transfer with Attachment
+1. Resource = Transaction, Operation = Transfer.
+2. Fill Recipient Address, Amount, and optionally Asset ID.
+3. In the Attachment section, choose Mode:
+  - Plain Text: enter human-readable text. The node encodes it as UTF‑8 and then Base58. The decoded byte length must be <= 140 bytes.
+  - Base58: paste a Base58 string. The node will validate and enforce the 140‑byte limit after decoding.
+4. Execute. If the attachment is too large or invalid Base58, you’ll get a clear validation error with the byte count.
+
 ### 4. Generate Address
 1. Resource = Utility, Operation = Generate Address.
 2. Provide a Public Key.
@@ -145,6 +153,19 @@ Notes:
 1. Resource = Utility, Operation = Validate Address.
 2. Provide the address string.
 3. Execute to get validation result.
+
+## Attachments: Details and Limits
+
+- DCC transfer and mass transfer attachments are binary payloads represented as Base58 strings on-chain.
+- This node provides a user-friendly Attachment section:
+  - Mode = Plain Text: we encode your text as UTF‑8, then Base58, and validate size.
+  - Mode = Base58: we validate your Base58 string and its decoded size.
+- Size limit: up to 140 bytes AFTER decoding (UTF‑8 bytes). Longer payloads are rejected with an error indicating the size.
+- Examples:
+  - Text: "hello" → 5 bytes → OK
+  - Emoji: "😀" → UTF‑8 is multi‑byte; ensure total bytes ≤ 140
+  - Base58: paste only if you already have the encoded form; otherwise use Plain Text mode.
+
 
 ## Development / Build
 
